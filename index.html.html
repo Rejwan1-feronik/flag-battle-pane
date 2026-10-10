@@ -1,0 +1,2689 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Flag Live Battle</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;background:#101820;color:#fff}
+body{position:relative;width:min(100vw,56.25vh);height:min(100vh,177.777777vw);margin:0 auto;background:radial-gradient(circle at 50% 48%,#65b9e8 0,#48a2d8 55%,#318bc5 100%);overflow:hidden;box-shadow:0 0 45px rgba(0,0,0,.55)}
+canvas{position:absolute;inset:0;display:block;width:100%;height:100%}
+.panel{position:absolute;top:12px;width:42%;min-width:0;padding:14px 16px;background:rgba(5,24,40,.93);border:2px solid #f3d23c;border-radius:13px;box-shadow:0 0 14px #0007;z-index:3}
+#join{left:3%;top:1.2%;width:46%;padding:16px 17px}#winners{right:8px;top:8px;width:42%;padding:16px 18px}
+.panel h3{margin:0 0 11px;text-align:center;font-size:28px;line-height:1.15;color:#25f3e9;white-space:nowrap}
+.panel p{margin:10px 0;font-size:28px;line-height:1.25;font-weight:800;white-space:nowrap}.yellow{color:#ffe92e}
+#liveCommentInstruction{position:absolute;left:50%;top:25.2%;transform:translateX(-50%);width:92%;z-index:4;text-align:center;font-size:clamp(20px,4.2vw,34px);line-height:1.15;font-weight:1000;color:#ffe92e;text-shadow:0 0 6px #000,0 0 12px #ffe92e,0 0 22px #ffb000;white-space:normal;pointer-events:none}
+#liveCommentInstruction .lcLabel{color:#25f3e9}
+@media(max-width:700px){#liveCommentInstruction{top:25%;width:94%;font-size:clamp(18px,4.8vw,30px);line-height:1.18}}
+
+#countryPrompt{position:absolute;left:50%;top:78%;transform:translateX(-50%);z-index:4;white-space:nowrap;text-align:center;font-size:clamp(24px,4.8vw,36px);line-height:1;font-weight:800;letter-spacing:.4px;color:#ffe92e;-webkit-text-stroke:2px #000;text-shadow:0 2px 4px #000;pointer-events:none;}
+@media(max-width:700px){#countryPrompt{font-size:clamp(23px,5.6vw,34px);-webkit-text-stroke:1.7px #000;text-shadow:0 2px 4px #000;}}
+#status{position:absolute;bottom:1.2%;left:50%;transform:translateX(-50%);text-align:center;text-shadow:0 2px 4px #000;z-index:3}
+#round{font-size:18px;font-weight:800}.hint{font-size:12px;color:#fff34b;font-weight:700}
+#startScreen{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(circle at 50% 50%,#16295f 0,#0c1741 46%,#080d28 100%);border-left:3px solid #29ff72;border-right:3px solid #29ff72}
+#startScreen.hidden{display:none}
+#startScreen::before{content:"";position:absolute;inset:-25%;background:repeating-conic-gradient(from -8deg at 50% 50%,rgba(46,112,196,.20) 0deg,rgba(46,112,196,.20) 2deg,transparent 2deg,transparent 18deg);animation:raySpin 18s linear infinite;transform-origin:center}
+#startScreen::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 52%,transparent 0 17%,rgba(0,0,0,.10) 42%,rgba(0,0,0,.28) 100%);pointer-events:none}
+.startContent{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:18px;transform:translateY(8%)}
+.startFlags{font-size:25px;letter-spacing:2px;filter:drop-shadow(0 0 8px rgba(0,229,255,.65));animation:flagsFloat 2.4s ease-in-out infinite}
+.startTitle{font-size:clamp(28px,5vw,54px);line-height:1.05;text-align:center;font-weight:1000;letter-spacing:2px;color:#fff;text-shadow:0 0 7px #fff,0 0 16px #35e9ff,0 0 28px #277cff;margin:0}
+.startButton{position:relative;min-width:300px;padding:19px 36px;border:2px solid #31e9ff;border-radius:15px;background:linear-gradient(180deg,#13265b,#081b3e);color:#ffe900;font-size:clamp(21px,3.4vw,32px);font-weight:1000;letter-spacing:.5px;cursor:pointer;box-shadow:0 0 12px #16e7ff,0 0 30px #286eff88,inset 0 0 18px #00b7ff33;animation:buttonPulse 1.45s ease-in-out infinite}
+.startButton::before,.startButton::after{content:"";position:absolute;width:25px;height:25px;border-color:#28fff0;pointer-events:none}
+.startButton::before{left:-3px;top:-3px;border-left:4px solid;border-top:4px solid;border-radius:8px 0 0 0}
+.startButton::after{right:-3px;bottom:-3px;border-right:4px solid;border-bottom:4px solid;border-radius:0 0 8px 0}
+.startButton span{display:inline-block;animation:buttonText 1.45s ease-in-out infinite}
+@keyframes raySpin{to{transform:rotate(360deg)}}
+@keyframes buttonPulse{0%,100%{transform:scale(1);box-shadow:0 0 12px #16e7ff,0 0 30px #286eff88,inset 0 0 18px #00b7ff33}50%{transform:scale(1.045);box-shadow:0 0 22px #16e7ff,0 0 50px #286effbb,inset 0 0 24px #00d9ff55}}
+@keyframes buttonText{0%,100%{text-shadow:0 0 5px #ffe900}50%{text-shadow:0 0 14px #fff000,0 0 24px #ffb000}}
+@keyframes flagsFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+#start.hidden{display:none}
+.live{position:absolute;right:8px;top:-8px;color:#ff3e62;font-weight:bold;font-size:12px}
+@media(max-width:700px){.panel{width:30vw;min-width:145px;padding:8px 9px}.panel h3{font-size:12px}.panel p{font-size:21px}.panel{top:8px}.panel#join{left:8px;width:47vw;min-width:180px;padding:10px 11px}.panel#join h3{font-size:22px}.panel#join p{font-size:22px;margin:8px 0;line-height:1.2}.panel#winners{right:8px;min-width:205px;width:42vw;padding:10px 11px}.panel#winners h3{font-size:22px}.panel#winners p{font-size:11px}.startContent{gap:14px}.startFlags{font-size:20px}.startTitle{font-size:27px}.startButton{min-width:245px;padding:15px 24px;font-size:20px}}
+
+#winners h3{display:flex;align-items:center;justify-content:center;gap:18px}
+.winnerRow{display:grid;grid-template-columns:40px 48px 1fr;align-items:center;gap:9px;margin:7px 0;padding:8px 10px;border:1px solid #31566b;border-radius:8px;background:rgba(10,35,54,.55);min-height:38px}.winnerRank{color:#25f3e9;font-weight:900}.winnerFlag{font-size:30px;text-align:center;line-height:1;font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif;display:flex;align-items:center;justify-content:center;min-width:54px;height:34px}
+.flagIcon{display:inline-block;width:30px;height:20px;border:1px solid rgba(255,255,255,.75);border-radius:3px;box-shadow:0 1px 3px #0008;position:relative;overflow:hidden;background:#ddd}.flag-jp{background:#fff}.flag-jp:after{content:"";position:absolute;width:9px;height:9px;border-radius:50%;background:#bc002d;left:50%;top:50%;transform:translate(-50%,-50%)}.flag-it{background:linear-gradient(90deg,#159447 0 33.33%,#fff 33.33% 66.66%,#ce2b37 66.66%)}.flag-ca{background:linear-gradient(90deg,#d52b1e 0 25%,#fff 25% 75%,#d52b1e 75%)}.flag-de{background:linear-gradient(#111 0 33.33%,#d00 33.33% 66.66%,#ffd400 66.66%)}.flag-nl{background:linear-gradient(#ae1c28 0 33.33%,#fff 33.33% 66.66%,#21468b 66.66%)}.flag-pl{background:linear-gradient(#fff 0 50%,#dc143c 50%)}.flag-fr{background:linear-gradient(90deg,#1750a4 0 33.33%,#fff 33.33% 66.66%,#ed2939 66.66%)}.flag-br{background:#169b62}.flag-br:after{content:"";position:absolute;left:50%;top:50%;width:14px;height:10px;background:#ffdf00;transform:translate(-50%,-50%) rotate(45deg)}.flag-kr{background:#fff}.flag-kr:after{content:"";position:absolute;left:50%;top:50%;width:10px;height:10px;border-radius:50%;background:linear-gradient(#cd2e3a 0 50%,#0047a0 50%);transform:translate(-50%,-50%)}.flag-se{background:#006aa7}.flag-se:after{content:"";position:absolute;background:#fecc00;left:31%;top:0;width:15%;height:100%;box-shadow:inset 0 -7px 0 #fecc00}.flag-no{background:#ba0c2f}.flag-no:before{content:"";position:absolute;left:29%;top:0;width:17%;height:100%;background:#fff;box-shadow:0 0 0 0 #fff}.flag-no:after{content:"";position:absolute;left:34%;top:0;width:7%;height:100%;background:#00205b;box-shadow:inset 0 7px 0 #00205b}.flag-us{background:repeating-linear-gradient(to bottom,#b22234 0 7.14%,#fff 7.14% 14.28%)}.flag-us:after{content:"";position:absolute;left:0;top:0;width:43%;height:55%;background:#3c3b6e}.flag-mx{background:linear-gradient(90deg,#006847 0 33.33%,#fff 33.33% 66.66%,#ce1126 66.66%)}.flag-tr{background:#e30a17}.flag-tr:after{content:"★";position:absolute;color:#fff;font-size:10px;left:50%;top:50%;transform:translate(-50%,-54%)}.flag-au{background:#002868}.flag-au:after{content:"✦";position:absolute;color:#fff;font-size:11px;right:4px;bottom:2px}.flag-gb{background:#012169}.flag-gb:after{content:"✚";position:absolute;color:#fff;font-size:13px;left:50%;top:50%;transform:translate(-50%,-54%)}.flag-es{background:linear-gradient(#aa151b 0 25%,#f1bf00 25% 75%,#aa151b 75%)}.flag-in{background:linear-gradient(#ff9933 0 33.33%,#fff 33.33% 66.66%,#138808 66.66%)}.flag-bd{background:#006a4e}.flag-bd:after{content:'';position:absolute;width:10px;height:10px;border-radius:50%;background:#f42a41;left:45%;top:50%;transform:translate(-50%,-50%)}.winnerName{font-size:25px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}@media(max-width:700px){.panel#winners{min-width:215px;width:44vw;padding:11px 12px}.winnerRow{grid-template-columns:30px 38px 1fr;gap:6px;margin:5px 0;padding:6px 7px;min-height:34px}.winnerFlag{font-size:34px;min-width:50px;height:34px}.winnerName{font-size:24px}}
+#startSettingsBtn{position:absolute;right:18px;top:18px;display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border:1px solid #24d9a1;border-radius:50%;background:rgba(5,24,40,.94);color:#ffe72b;font-size:23px;line-height:1;cursor:pointer;z-index:6;box-shadow:0 0 10px #0f6;}
+#settingsBtn{display:inline-flex;align-items:center;justify-content:center;margin:0;width:38px;height:38px;border:1px solid #24d9a1;border-radius:50%;background:rgba(5,24,40,.94);color:#ffe72b;font-size:22px;line-height:1;cursor:pointer;z-index:6;box-shadow:0 0 10px #0f6;}
+#controls{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92%,680px);max-height:88vh;overflow:auto;padding:22px 24px;background:#03261d;border:2px solid #27d79c;border-radius:18px;box-shadow:0 0 35px rgba(0,255,150,.25),0 12px 50px #000b;z-index:50;color:#a7e7cf;display:none;}
+#controls.open{display:block}
+.controlsHead{display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid #174b3d;margin-bottom:16px}.controlsHead h2{margin:0;color:#ffe52a;font-size:24px}.closeControls{width:48px;height:42px;border:0;border-radius:12px;background:#0d4737;color:#fff;font-size:26px;cursor:pointer}.controlRow{margin:14px 0}.controlTop{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:8px;font-weight:700}.controlTop label{font-size:15px}.value{color:#ffe52a;font-weight:900}.controlRow input[type=range]{width:100%;accent-color:#2ce09c}.controlRow input[type=color]{width:100%;height:44px;border:2px solid #19634d;border-radius:10px;background:#052d23;padding:4px}.controlRow select{width:100%;height:44px;border:1px solid #187456;border-radius:10px;background:#063326;color:#fff;font-size:15px;font-weight:700;padding:0 12px}.applyBtn,.bottomBtn{width:100%;min-height:44px;border:1px solid #2ccf98;border-radius:12px;background:#107552;color:#ffe72b;font-weight:900;font-size:15px;cursor:pointer}.sectionLine{border-top:1px solid #174b3d;margin:18px 0}.bottomBtns{display:grid;grid-template-columns:1fr 1fr;gap:12px}.bottomBtn{color:#fff}.bottomBtn.primary{color:#ffe72b}.note{font-size:12px;color:#77bda7;margin-top:6px;line-height:1.35}
+@media(max-width:700px){#winners h3{gap:14px}#startSettingsBtn{right:10px;top:10px;width:36px;height:36px;font-size:20px}#settingsBtn{width:32px;height:32px;font-size:18px;line-height:1;margin:0}#controls{width:calc(100vw - 24px);max-height:90vh;padding:17px 15px;border-radius:15px}.controlsHead h2{font-size:20px}.controlTop label{font-size:13px}}
+
+
+/* 21 selectable arena themes */
+body[data-theme="ocean-blue"]{background:radial-gradient(circle at 50% 48%,#65b9e8 0,#48a2d8 55%,#318bc5 100%)}
+body[data-theme="emerald-night"]{background:radial-gradient(circle at 50% 48%,#1f8f75 0,#075743 55%,#022d24 100%)}
+body[data-theme="midnight"]{background:radial-gradient(circle at 50% 48%,#2d3d73 0,#111a42 55%,#070b20 100%)}
+body[data-theme="royal-purple"]{background:radial-gradient(circle at 50% 48%,#7452b8 0,#3d246f 55%,#1c0e3c 100%)}
+body[data-theme="sunset"]{background:radial-gradient(circle at 50% 48%,#ef8a54 0,#9d3f55 55%,#401a35 100%)}
+body[data-theme="cyber-neon"]{background:radial-gradient(circle at 50% 48%,#174b66 0,#071d36 55%,#020914 100%)}
+body[data-theme="crimson-arena"]{background:radial-gradient(circle at 50% 48%,#9b3b4c 0,#501426 55%,#220710 100%)}
+body[data-theme="arctic-ice"]{background:radial-gradient(circle at 50% 48%,#b8e8f5 0,#5aa9c4 55%,#1d5d7a 100%)}
+body[data-theme="golden-night"]{background:radial-gradient(circle at 50% 48%,#8c7a3e 0,#4b3d16 55%,#201804 100%)}
+body[data-theme="lime-matrix"]{background:radial-gradient(circle at 50% 48%,#3e9b52 0,#155323 55%,#061d0c 100%)}
+body[data-theme="rose-pink"]{background:radial-gradient(circle at 50% 48%,#d86691 0,#762b58 55%,#2b0d24 100%)}
+body[data-theme="deep-space"]{background:radial-gradient(circle at 50% 48%,#273a63 0,#10162d 55%,#03040b 100%)}
+body[data-theme="volcanic"]{background:radial-gradient(circle at 50% 48%,#8b442e 0,#48180f 55%,#170604 100%)}
+body[data-theme="tropical"]{background:radial-gradient(circle at 50% 48%,#26a69a 0,#086b70 55%,#02343d 100%)}
+body[data-theme="steel"]{background:radial-gradient(circle at 50% 48%,#78858d 0,#39444c 55%,#171d21 100%)}
+body[data-theme="violet-glow"]{background:radial-gradient(circle at 50% 48%,#8d68d9 0,#4c2e8f 55%,#211045 100%)}
+body[data-theme="amber"]{background:radial-gradient(circle at 50% 48%,#c28a38 0,#70420e 55%,#281603 100%)}
+body[data-theme="mono-dark"]{background:radial-gradient(circle at 50% 48%,#596066 0,#292e33 55%,#0c0e10 100%)}
+body[data-theme="aqua-dark"]{background:radial-gradient(circle at 50% 48%,#278b9b 0,#0c4f61 55%,#03232f 100%)}
+body[data-theme="galaxy"]{background:radial-gradient(circle at 50% 48%,#4c3d7c 0,#211b4a 45%,#090b22 100%)}
+
+
+@keyframes winnerPulse{
+0%{transform:scale(1)}
+50%{transform:scale(1.12)}
+100%{transform:scale(1)}
+}
+#winnerCard{animation:winnerPulse 1.2s infinite}
+#winnerTitle{text-shadow:0 0 20px #ffd700}
+#winnerFlagBig{text-shadow:0 0 25px #fff}
+.emojiFlagFallback{display:inline-block;font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif;text-shadow:0 2px 8px #0008}
+
+
+/* LIVE COMMENT LEADERBOARD — shown in the open area below HOW TO JOIN, outside the circle */
+#liveCommentLeaderboard{
+  position:absolute;left:3%;top:0;width:46%;
+  z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  pointer-events:none;
+}
+.liveLbBox{
+  width:100%;min-height:82px;padding:14px 14px;border-radius:14px;
+  background:rgba(5,24,40,.94);border:2px solid #ffe92e;
+  box-shadow:0 0 12px #ffe92e66,0 0 24px #00d9ff33;
+  text-align:center;font-weight:900;
+  animation:liveLbIn .28s ease-out,liveLbOut .28s ease-in 2.7s forwards;
+}
+.liveLbRank{font-size:20px;line-height:1;color:#25f3e9;text-shadow:0 0 6px #25f3e9;margin-bottom:3px}
+.liveLbName{font-size:clamp(18px,2.5vw,24px);line-height:1.1;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px #000}
+.liveLbCount{color:#ffe92e}
+@keyframes liveLbIn{from{opacity:0;transform:translateY(-8px) scale(.94)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes liveLbOut{to{opacity:0;transform:translateY(5px) scale(.96)}}
+@media(max-width:700px){
+ #liveCommentLeaderboard{left:8px;top:0;width:47vw;min-width:180px;}
+ .liveLbBox{min-height:72px;padding:11px 10px;border-radius:12px}
+ .liveLbRank{font-size:16px;margin-bottom:5px}
+ .liveLbName{font-size:clamp(16px,4vw,21px)}
+}
+
+/* LIVE STREAM COMMENT -> FLAG feedback */
+#liveCommentFeed{
+  position:absolute;left:50%;top:7.5%;transform:translateX(-50%);
+  z-index:8;width:min(82%,520px);display:flex;flex-direction:column;align-items:center;
+  gap:6px;pointer-events:none;
+}
+.liveCommentToast{
+  display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;
+  background:rgba(5,24,40,.90);border:1px solid #25f3e9;box-shadow:0 0 14px #00d9ff55;
+  font-size:13px;font-weight:800;text-shadow:0 1px 2px #000;
+  animation:liveToastIn .22s ease-out,liveToastOut .45s ease-in 3.8s forwards;
+}
+.liveCommentToast .toastFlag{font-size:20px;line-height:1}
+.liveCommentToast .toastName{color:#ffe92e}
+.liveCommentToast .toastCountry{color:#fff}
+@keyframes liveToastIn{from{opacity:0;transform:translateY(-10px) scale(.94)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes liveToastOut{to{opacity:0;transform:translateY(-8px) scale(.96)}}
+@media(max-width:700px){
+ #liveCommentFeed{top:8.5%;width:92%}
+ .liveCommentToast{font-size:10px;padding:5px 9px}
+ .liveCommentToast .toastFlag{font-size:16px}
+}
+
+
+/* Keep HOW TO JOIN + LAST WINNERS clearly highlighted during ROUND WINNER screen */
+.panel.winner-highlight{
+  z-index:1000 !important;
+  border-color:#ffe92e;
+  box-shadow:0 0 10px #ffe92e,0 0 24px #ffe92e88,inset 0 0 12px #ffe92e22;
+}
+.panel.winner-highlight h3{
+  color:#ffe92e;
+  text-shadow:0 0 7px #ffe92e,0 0 16px #ffb000;
+}
+.panel.winner-highlight p{
+  color:#fff !important;
+  text-shadow:0 0 5px #fff,0 0 11px #ffe92e,0 0 20px #ffe92e88;
+  background:rgba(255,233,46,.10);
+  border-radius:6px;
+  padding:2px 5px;
+}
+.panel.winner-highlight h3{
+  color:#ffe92e !important;
+  text-shadow:0 0 8px #ffe92e,0 0 18px #ffe92e,0 0 28px #ffb000;
+}
+.panel.winner-highlight .winnerFlag{
+  filter:brightness(1.35) drop-shadow(0 0 5px #ffe92e);
+}
+.panel.winner-highlight .yellow{
+  color:#ffe92e;
+  text-shadow:0 0 7px #ffe92e;
+}
+.panel.winner-highlight .winnerRank{color:#ffe92e;text-shadow:0 0 7px #ffe92e}
+.panel.winner-highlight .winnerName{color:#fff;text-shadow:0 0 6px #fff,0 0 10px #ffe92e55}
+.panel.winner-highlight .winnerRow{border-color:#ffe92e;box-shadow:0 0 7px #ffe92e55;background:rgba(10,35,54,.82)}
+
+/* Country prompt refinement */
+.country-prompt, #countryPrompt, .country-prompt-text {
+  font-size: clamp(22px, 5vw, 42px) !important;
+  font-weight: 900 !important;
+  color: #ffd21a !important;
+  -webkit-text-stroke: 2.5px #000 !important;
+  text-shadow: 0 3px 0 #000, 0 0 6px rgba(0,0,0,.9) !important;
+  margin-top: 28px !important;
+}
+</style>
+
+<script>
+(function(){
+  let ctx=null, master=null, enabled=false;
+  const gains={bounce:null,bomb:null,gun:null,winner:null,eliminated:null};
+  const base={bounce:.42,bomb:.55,gun:.32,winner:.48,eliminated:.34};
+
+  function ensureAudio(){
+    if(!ctx){
+      ctx=new (window.AudioContext||window.webkitAudioContext)();
+      master=ctx.createGain();
+      master.gain.value=1.0;
+      master.connect(ctx.destination);
+      Object.keys(gains).forEach(k=>{
+        gains[k]=ctx.createGain();
+        gains[k].gain.value=1;
+        gains[k].connect(master);
+      });
+    }
+    if(ctx.state==='suspended') ctx.resume().catch(()=>{});
+    enabled=true;
+    applyVolumes();
+  }
+  function applyVolumes(){
+    if(!ctx) return;
+    const s=window.flagBattleSoundSettings||{master:100,bounce:100,bomb:100,gun:100,winner:100,eliminated:100};
+    master.gain.setTargetAtTime(Math.max(0,Math.min(200,+s.master||0))/100,ctx.currentTime,.003);
+    Object.keys(gains).forEach(k=>{
+      const v=Math.max(0,Math.min(200,+s[k]||0))/100;
+      gains[k].gain.setTargetAtTime(v,ctx.currentTime,.003);
+    });
+  }
+  window.setFBXSoundVolume=function(type,value){
+    window.flagBattleSoundSettings=window.flagBattleSoundSettings||{};
+    window.flagBattleSoundSettings[type]=Math.max(0,Math.min(200,+value||0));
+    ensureAudio();
+    applyVolumes();
+  };
+  window.applyFBXSoundSettings=applyVolumes;
+  window.enableFBXSound=ensureAudio;
+
+  function beep(type){
+    if(!enabled || !ctx || !gains[type]) return;
+    applyVolumes();
+    const now=ctx.currentTime, g=gains[type];
+    if(type==='bounce'){
+      const o=ctx.createOscillator(), eg=ctx.createGain();
+      o.type='sine'; o.frequency.setValueAtTime(520,now); o.frequency.exponentialRampToValueAtTime(180,now+.09);
+      eg.gain.setValueAtTime(.0001,now); eg.gain.exponentialRampToValueAtTime(base.bounce,now+.006); eg.gain.exponentialRampToValueAtTime(.0001,now+.11);
+      o.connect(eg);eg.connect(g);o.start(now);o.stop(now+.12);
+    }else if(type==='gun'){
+      const o=ctx.createOscillator(), eg=ctx.createGain();
+      o.type='square'; o.frequency.setValueAtTime(900,now); o.frequency.exponentialRampToValueAtTime(120,now+.07);
+      eg.gain.setValueAtTime(base.gun,now); eg.gain.exponentialRampToValueAtTime(.0001,now+.09);
+      o.connect(eg);eg.connect(g);o.start(now);o.stop(now+.1);
+    }else if(type==='bomb'){
+      const o=ctx.createOscillator(), eg=ctx.createGain(), n=ctx.createBufferSource(), ng=ctx.createGain();
+      o.type='sine'; o.frequency.setValueAtTime(90,now); o.frequency.exponentialRampToValueAtTime(38,now+.38);
+      eg.gain.setValueAtTime(base.bomb,now); eg.gain.exponentialRampToValueAtTime(.0001,now+.42);
+      const buf=ctx.createBuffer(1,Math.floor(ctx.sampleRate*.42),ctx.sampleRate), d=buf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,2.2);
+      n.buffer=buf; ng.gain.setValueAtTime(.35,now); ng.gain.exponentialRampToValueAtTime(.0001,now+.42);
+      o.connect(eg);eg.connect(g);n.connect(ng);ng.connect(g);
+      o.start(now);o.stop(now+.45);n.start(now);n.stop(now+.45);
+    }else if(type==='winner'){
+      const o=ctx.createOscillator(), eg=ctx.createGain();
+      o.type='triangle'; o.frequency.setValueAtTime(520,now); o.frequency.exponentialRampToValueAtTime(880,now+.18);
+      eg.gain.setValueAtTime(.0001,now); eg.gain.exponentialRampToValueAtTime(base.winner,now+.015); eg.gain.exponentialRampToValueAtTime(.0001,now+.45);
+      o.connect(eg);eg.connect(g);o.start(now);o.stop(now+.46);
+      setTimeout(()=>{if(!ctx)return;const o2=ctx.createOscillator(),g2=ctx.createGain();const t=ctx.currentTime;o2.type='triangle';o2.frequency.setValueAtTime(660,t);o2.frequency.exponentialRampToValueAtTime(1040,t+.2);g2.gain.setValueAtTime(.0001,t);g2.gain.exponentialRampToValueAtTime(base.winner*.8,t+.015);g2.gain.exponentialRampToValueAtTime(.0001,t+.4);o2.connect(g2);g2.connect(g);o2.start(t);o2.stop(t+.42)},130);
+    }else if(type==='eliminated'){
+      const o=ctx.createOscillator(), eg=ctx.createGain();
+      o.type='sawtooth'; o.frequency.setValueAtTime(300,now); o.frequency.exponentialRampToValueAtTime(90,now+.2);
+      eg.gain.setValueAtTime(.0001,now); eg.gain.exponentialRampToValueAtTime(base.eliminated,now+.008); eg.gain.exponentialRampToValueAtTime(.0001,now+.22);
+      o.connect(eg);eg.connect(g);o.start(now);o.stop(now+.23);
+    }
+  }
+  window.playFBXSFX=beep;
+  // First user interaction unlocks Web Audio; no extra floating button is added.
+  window.addEventListener('pointerdown',ensureAudio,{passive:true});
+  window.addEventListener('keydown',ensureAudio,{passive:true});
+  window.addEventListener('touchstart',ensureAudio,{passive:true});
+})();
+</script>
+
+</head>
+<body>
+<div id="join" class="panel">
+  <h3>🎮 HOW TO JOIN!</h3>
+  <p>🌐 Type <span class="yellow">Your Country Name</span></p>
+  <p>🛡️ Type <span class="yellow">Shield</span> or 💣 <span class="yellow">Bomb</span></p>
+  <p>👑 Type 5 times for <span class="yellow">BIG FLAG!</span></p>
+</div>
+<div id="winners" class="panel">
+  <h3>LAST WINNERS <button id="settingsBtn" aria-label="Open controls">⚙</button></h3>
+  <div class="winnerRow"><span class="winnerRank">#1</span><span class="winnerFlag" id="wf1"><span class="flagIcon flag-placeholder"></span></span><span class="winnerName" id="w1">Waiting...</span></div>
+  <div class="winnerRow"><span class="winnerRank">#2</span><span class="winnerFlag" id="wf2"><span class="flagIcon flag-placeholder"></span></span><span class="winnerName" id="w2">Waiting...</span></div>
+  <div class="winnerRow"><span class="winnerRank">#3</span><span class="winnerFlag" id="wf3"><span class="flagIcon flag-placeholder"></span></span><span class="winnerName" id="w3">Waiting...</span></div>
+  <div class="winnerRow"><span class="winnerRank">#4</span><span class="winnerFlag" id="wf4"><span class="flagIcon flag-placeholder"></span></span><span class="winnerName" id="w4">Waiting...</span></div>
+  <div class="winnerRow"><span class="winnerRank">#5</span><span class="winnerFlag" id="wf5"><span class="flagIcon flag-placeholder"></span></span><span class="winnerName" id="w5">Waiting...</span></div>
+</div>
+<div id="liveCommentLeaderboard" aria-live="polite" aria-label="Live Comment Leaderboard"></div>
+<script>
+(function(){
+  function alignLiveLeaderboard(){
+    const join=document.getElementById('join');
+    const lb=document.getElementById('liveCommentLeaderboard');
+    if(!join||!lb) return;
+    /* Keep the leaderboard exactly below HOW TO JOIN: same left/width, 25px real gap. */
+    const parent=lb.offsetParent || document.body;
+    let left=join.offsetLeft;
+    let top=join.offsetTop + join.offsetHeight + 25;
+    let node=join.offsetParent;
+    while(node && node!==parent){
+      left += node.offsetLeft;
+      top += node.offsetTop;
+      node=node.offsetParent;
+    }
+    lb.style.left=left+'px';
+    lb.style.top=top+'px';
+    lb.style.width=join.offsetWidth+'px';
+  }
+  window.addEventListener('load',alignLiveLeaderboard);
+  window.addEventListener('resize',alignLiveLeaderboard);
+  window.addEventListener('orientationchange',function(){setTimeout(alignLiveLeaderboard,100);});
+  setTimeout(alignLiveLeaderboard,300);
+  setTimeout(alignLiveLeaderboard,1000);
+})();
+</script>
+<div id="controls">
+  <div class="controlsHead"><h2>⚙ CONTROLS</h2><button class="closeControls" id="closeControls">×</button></div>
+  <div class="controlRow"><div class="controlTop"><label>Circle Gap</label><span class="value" id="gapVal">0.30</span></div><input id="gapRange" type="range" min="0.05" max="0.80" step="0.01" value="0.30"></div>
+  <div class="controlRow"><div class="controlTop"><label>Circle Speed</label><span class="value" id="circleSpeedVal">0.16</span></div><input id="circleSpeedRange" type="range" min="0" max="1" step="0.01" value="0.16"></div>
+  <div class="controlRow"><div class="controlTop"><label>Flag Speed</label><span class="value" id="flagSpeedVal">100%</span></div><input id="flagSpeedRange" type="range" min="25" max="200" step="5" value="100"></div>
+  <div class="controlRow"><div class="controlTop"><label>Flag Size</label><span class="value" id="flagSizeVal">100%</span></div><input id="flagSizeRange" type="range" min="50" max="180" step="5" value="100"></div>
+  <div class="controlRow"><div class="controlTop"><label>Fan Size</label><span class="value" id="fanSizeVal">100%</span></div><input id="fanSizeRange" type="range" min="50" max="180" step="5" value="100"></div>
+  <div class="controlRow"><div class="controlTop"><label>Flag Count</label><span class="value" id="flagCountVal">50</span></div><input id="flagCountRange" type="range" min="10" max="250" step="10" value="50"><div class="note">Maximum flags spawned in a round.</div></div>
+  <button class="applyBtn" id="applyFlagCount">Apply Flag Count (New Round)</button>
+  <div class="sectionLine"></div>
+  <div class="controlRow"><div class="controlTop"><label>🔊 SOUND CONTROLS</label><span class="value">0–200%</span></div></div>
+  <div class="controlRow"><div class="controlTop"><label>Master</label><span class="value" id="soundMasterVal">100%</span></div><input id="soundMasterRange" type="range" min="0" max="200" step="1" value="100"></div>
+  <div class="controlRow"><div class="controlTop"><label>Flag Bounce</label><span class="value" id="soundBounceVal">100%</span></div><input id="soundBounceRange" type="range" min="0" max="200" step="1" value="100"></div>
+  <div class="controlRow"><div class="controlTop"><label>Bomb</label><span class="value" id="soundBombVal">100%</span></div><input id="soundBombRange" type="range" min="0" max="200" step="1" value="100"></div>
+  <div class="controlRow"><div class="controlTop"><label>Gun</label><span class="value" id="soundGunVal">100%</span></div><input id="soundGunRange" type="range" min="0" max="200" step="1" value="100"></div>
+  <div class="controlRow"><div class="controlTop"><label>Winner</label><span class="value" id="soundWinnerVal">100%</span></div><input id="soundWinnerRange" type="range" min="0" max="200" step="1" value="100"></div>
+  <div class="controlRow"><div class="controlTop"><label>Eliminated</label><span class="value" id="soundEliminatedVal">100%</span></div><input id="soundEliminatedRange" type="range" min="0" max="200" step="1" value="100"></div>
+  <div class="note">Volume changes apply instantly and are saved in this browser.</div>
+  <div class="sectionLine"></div>
+  <div class="controlRow">
+    <div class="controlTop"><label>📡 LIVE CHAT BRIDGE</label></div>
+    <div class="note">A stream-chat connector can send <b>username + comment</b> to this game. If the comment contains any of the <b>250 supported country/territory names</b>, that viewer's <b>@username + flag</b> spawns and bounces in the arena.</div>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <input id="liveTestUser" value="@TestViewer" placeholder="@username" style="flex:1;min-width:0;padding:8px;border-radius:7px;border:1px solid #31566b;background:#07131d;color:#fff">
+      <input id="liveTestText" value="Bangladesh" placeholder="Country comment" style="flex:1;min-width:0;padding:8px;border-radius:7px;border:1px solid #31566b;background:#07131d;color:#fff">
+    </div>
+    <button class="applyBtn" id="liveTestBtn" style="margin-top:7px">Test Live Comment → Spawn Flag</button>
+    <div style="margin-top:12px;padding-top:10px;border-top:1px solid #24475b">
+      <div class="controlTop"><label>▶ YOUTUBE LIVE CHAT</label><span class="value" id="ytStatus">OFF</span></div>
+      <div class="note">Connect a public YouTube live stream. The game reads new live-chat messages and, when a country name is found, immediately spawns that viewer's <b>@username + flag</b>. Requires a YouTube Data API v3 key and the live video's ID.</div>
+      <div style="margin-top:8px;display:grid;gap:6px">
+        <input id="ytApiKey1" type="password" autocomplete="off" placeholder="API 1 — YouTube Data API v3 key" style="width:100%;box-sizing:border-box;padding:8px;border-radius:7px;border:1px solid #31566b;background:#07131d;color:#fff">
+        <input id="ytApiKey2" type="password" autocomplete="off" placeholder="API 2 — YouTube Data API v3 key" style="width:100%;box-sizing:border-box;padding:8px;border-radius:7px;border:1px solid #31566b;background:#07131d;color:#fff">
+        <input id="ytApiKey3" type="password" autocomplete="off" placeholder="API 3 — YouTube Data API v3 key" style="width:100%;box-sizing:border-box;padding:8px;border-radius:7px;border:1px solid #31566b;background:#07131d;color:#fff">
+        <input id="ytApiKey4" type="password" autocomplete="off" placeholder="API 4 — YouTube Data API v3 key" style="width:100%;box-sizing:border-box;padding:8px;border-radius:7px;border:1px solid #31566b;background:#07131d;color:#fff">
+        <input id="ytApiKey5" type="password" autocomplete="off" placeholder="API 5 — YouTube Data API v3 key" style="width:100%;box-sizing:border-box;padding:8px;border-radius:7px;border:1px solid #31566b;background:#07131d;color:#fff">
+      </div>
+      <input id="ytVideoId" placeholder="YouTube Live Video ID or URL" style="width:100%;box-sizing:border-box;margin-top:6px;padding:8px;border-radius:7px;border:1px solid #31566b;background:#07131d;color:#fff">
+      <div id="ytApiPoolStatus" style="margin-top:8px;padding:8px;border:1px solid #24475b;border-radius:8px;background:#07131d;font-size:12px;line-height:1.55">
+        <div><b>Current API:</b> <span id="ytCurrentApi">#1</span> &nbsp; <b>Remaining APIs:</b> <span id="ytRemainingApis">4</span></div>
+        <div><b>Auto Switch:</b> <span id="ytAutoSwitch" style="color:#52ff8a">ON</span></div>
+        <div id="ytApiRows" style="margin-top:4px"></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:7px">
+        <button class="applyBtn" id="ytConnectBtn" style="flex:1">Connect YouTube Live</button>
+        <button class="applyBtn" id="ytDisconnectBtn" style="flex:1;background:#3a1720">Disconnect</button>
+      </div>
+      <div class="note" id="ytHint" style="margin-top:6px">API keys stay in this browser session and are sent only to Google's YouTube API.</div>
+    </div>
+  </div>
+
+  <div class="sectionLine"></div>
+  <div class="controlRow"><div class="controlTop"><label>White Circle Color</label></div><input id="whiteColor" type="color" value="#e8faff"></div>
+  <div class="controlRow"><div class="controlTop"><label>Fan Color</label></div><input id="fanColor" type="color" value="#375c65"></div>
+    <div class="sectionLine"></div>
+  <div class="controlRow"><div class="controlTop"><label>Elimination Animation</label><span class="value" id="elimVal">1</span></div><select id="elimSelect"><option value="1">1. Fall</option><option value="2">2. Fade</option><option value="3">3. Pop</option><option value="4">4. Bounce</option><option value="5">5. Spin</option><option value="6">6. Zoom Out</option><option value="7">7. Zoom In</option><option value="8">8. Flip</option><option value="9">9. Shake</option><option value="10">10. Drop</option><option value="11">11. Float</option><option value="12">12. Shrink</option><option value="13">13. Explode</option><option value="14">14. Blink</option><option value="15">15. Roll</option><option value="16">16. Swing</option><option value="17">17. Pulse</option><option value="18">18. Glitch</option><option value="19">19. Meteor</option><option value="20">20. Dissolve</option><option value="21">21. Random</option></select></div>
+  <div class="controlRow"><div class="controlTop"><label>Circle Style / Design</label><span class="value" id="styleVal">1</span></div><select id="styleSelect"><option value="1">1. Classic</option><option value="2">2. Neon</option><option value="3">3. Dashed</option><option value="4">4. Double Ring</option><option value="5">5. Triple Ring</option><option value="6">6. Dotted</option><option value="7">7. Pulse</option><option value="8">8. Tech Grid</option><option value="9">9. Arc</option><option value="10">10. Minimal</option><option value="11">11. Glow</option><option value="12">12. Sharp</option><option value="13">13. Soft</option><option value="14">14. Orbit</option><option value="15">15. Segments</option><option value="16">16. Wave</option><option value="17">17. Target</option><option value="18">18. Broken</option><option value="19">19. Electric</option><option value="20">20. Shadow</option><option value="21">21. Rainbow</option></select></div>
+  <div class="controlRow"><div class="controlTop"><label>Theme</label><span class="value" id="themeVal">Original</span></div><select id="themeSelect"><option value="original">1. Original</option><option value="ocean-blue">2. Ocean Blue</option><option value="emerald-night">3. Emerald Night</option><option value="midnight">4. Midnight</option><option value="royal-purple">5. Royal Purple</option><option value="sunset">6. Sunset</option><option value="cyber-neon">7. Cyber Neon</option><option value="crimson-arena">8. Crimson Arena</option><option value="arctic-ice">9. Arctic Ice</option><option value="golden-night">10. Golden Night</option><option value="lime-matrix">11. Lime Matrix</option><option value="rose-pink">12. Rose Pink</option><option value="deep-space">13. Deep Space</option><option value="volcanic">14. Volcanic</option><option value="tropical">15. Tropical</option><option value="steel">16. Steel</option><option value="violet-glow">17. Violet Glow</option><option value="amber">18. Amber</option><option value="mono-dark">19. Mono Dark</option><option value="aqua-dark">20. Aqua Dark</option><option value="galaxy">21. Galaxy</option></select></div>
+  <div class="sectionLine"></div>
+  <div class="bottomBtns"><button class="bottomBtn primary" id="saveSettings">💾 Save Settings</button><button class="bottomBtn" id="resetDefault">↺ Original Settings</button></div><div style="margin-top:12px"><button class="bottomBtn" id="newRound">↻ New Round</button></div>
+</div>
+<div id="startScreen">
+  <button id="startSettingsBtn" aria-label="Open settings">⚙</button>
+  <div class="startContent">
+    <div id="gameRemoteCode" style="margin:0 auto 14px;padding:10px 18px;border:1px solid rgba(255,255,255,.25);border-radius:12px;background:rgba(0,0,0,.35);color:#fff;text-align:center;font-weight:800;font-size:18px;letter-spacing:3px;max-width:260px">CODE: ------</div>
+    <button id="start" class="startButton"><span>▶ START GAME</span></button>
+  </div>
+</div>
+<div id="liveCommentFeed" aria-live="polite"></div>
+<canvas id="game"></canvas>
+<div id="countryPrompt">TYPE YOUR COUNTRY NAME</div>
+<script>
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const fanImg=new Image(); fanImg.src='fan_center_clean.png'; fanImg.onload=()=>draw();
+let W,H,dpr=1,cx,cy,R,ringGap=0,rotation=0,fanRotation=0,flags=[],running=false,last=0,round=1,activeRound=1,preRoundTime=0,preRoundPhase=true,gapOpen=0,eliminated=[],elimSeq=0,spawnedTotal=0,spawnLimit=50,activeLimit=30;
+let arenaBombs=[],arenaShields=[],arenaGuns=[],gunBullets=[],powerupClock=0,nextPowerupAt=15,nextPowerupType='gun',shieldSerial=0;
+let gunClock=0,nextGunAt=60,gunSerial=0;
+let settings={gap:.30,circleSpeed:.16,flagSpeed:1,flagSize:1,fanSize:1,flagCount:50,white:'#e8faff',fanColor:'#375c65',elim:1,style:1,theme:'original'};
+const countries=[
+ ['🇯🇵','@japan_655'],['🇮🇹','@italy_270'],['🇨🇦','@canada_848'],['🇩🇪','@germany_909'],
+ ['🇳🇱','@netherlands_884'],['🇵🇱','@poland_350'],['🇫🇷','@france_447'],['🇧🇷','@brazil_46'],
+ ['🇰🇷','@korea_188'],['🇸🇪','@sweden_795'],['🇳🇴','@norway_649'],['🇺🇸','@usa_452'],
+ ['🇲🇽','@mexico_730'],['🇹🇷','@turkey_708'],['🇦🇺','@australia_609'],['🇬🇧','@uk_347'],
+ ['🇪🇸','@spain_302'],['🇮🇳','@india_666'],['🇧🇩','@bangladesh_live']
+];
+function resize(){
+dpr=Math.min(devicePixelRatio||1,2);W=document.body.clientWidth;H=document.body.clientHeight;canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0);cx=W/2;cy=H*.50;R=Math.min(W*.47,H*.43);if(R<175)R=Math.min(W*.49,H*.415);const cp=document.getElementById('countryPrompt');if(cp)cp.style.top=Math.min(H-58,cy+R+14)+'px';}
+addEventListener('resize',resize);resize();
+
+
+// ============================================================
+// LIVE STREAM COMMENT -> PLAYER FLAG BRIDGE
+// A live-chat connector can call window.receiveLiveComment({
+//   username: '@name', text: 'Bangladesh'
+// }) or postMessage the same object with type:'liveComment'.
+// The game itself remains fully offline/static; this bridge does
+// not require cross-origin access to a streaming site's chat.
+// ============================================================
+const liveCountryMap = [
+  {flag:"🇦🇼",name:"Aruba",keys:["aruba"]},
+  {flag:"🇦🇫",name:"Afghanistan",keys:["afghanistan"]},
+  {flag:"🇦🇴",name:"Angola",keys:["angola"]},
+  {flag:"🇦🇮",name:"Anguilla",keys:["anguilla"]},
+  {flag:"🇦🇽",name:"Åland Islands",keys:["åland islands"]},
+  {flag:"🇦🇱",name:"Albania",keys:["albania"]},
+  {flag:"🇦🇩",name:"Andorra",keys:["andorra"]},
+  {flag:"🇦🇪",name:"United Arab Emirates",keys:["united arab emirates"]},
+  {flag:"🇦🇷",name:"Argentina",keys:["argentina"]},
+  {flag:"🇦🇲",name:"Armenia",keys:["armenia"]},
+  {flag:"🇦🇸",name:"American Samoa",keys:["american samoa"]},
+  {flag:"🇦🇶",name:"Antarctica",keys:["antarctica"]},
+  {flag:"🇹🇫",name:"French Southern Territories",keys:["french southern territories"]},
+  {flag:"🇦🇬",name:"Antigua and Barbuda",keys:["antigua and barbuda"]},
+  {flag:"🇦🇺",name:"Australia",keys:["australia"]},
+  {flag:"🇦🇹",name:"Austria",keys:["austria"]},
+  {flag:"🇦🇿",name:"Azerbaijan",keys:["azerbaijan"]},
+  {flag:"🇧🇮",name:"Burundi",keys:["burundi"]},
+  {flag:"🇧🇪",name:"Belgium",keys:["belgium"]},
+  {flag:"🇧🇯",name:"Benin",keys:["benin"]},
+  {flag:"🇧🇶",name:"Bonaire, Sint Eustatius and Saba",keys:["bonaire, sint eustatius and saba"]},
+  {flag:"🇧🇫",name:"Burkina Faso",keys:["burkina faso"]},
+  {flag:"🇧🇩",name:"Bangladesh",keys:["bangladesh"]},
+  {flag:"🇧🇬",name:"Bulgaria",keys:["bulgaria"]},
+  {flag:"🇧🇭",name:"Bahrain",keys:["bahrain"]},
+  {flag:"🇧🇸",name:"Bahamas",keys:["bahamas"]},
+  {flag:"🇧🇦",name:"Bosnia and Herzegovina",keys:["bosnia and herzegovina"]},
+  {flag:"🇧🇱",name:"Saint Barthélemy",keys:["saint barthélemy"]},
+  {flag:"🇧🇾",name:"Belarus",keys:["belarus"]},
+  {flag:"🇧🇿",name:"Belize",keys:["belize"]},
+  {flag:"🇧🇲",name:"Bermuda",keys:["bermuda"]},
+  {flag:"🇧🇴",name:"Bolivia, Plurinational State of",keys:["bolivia", "bolivia, plurinational state of"]},
+  {flag:"🇧🇷",name:"Brazil",keys:["brazil"]},
+  {flag:"🇧🇧",name:"Barbados",keys:["barbados"]},
+  {flag:"🇧🇳",name:"Brunei Darussalam",keys:["brunei", "brunei darussalam"]},
+  {flag:"🇧🇹",name:"Bhutan",keys:["bhutan"]},
+  {flag:"🇧🇻",name:"Bouvet Island",keys:["bouvet island"]},
+  {flag:"🇧🇼",name:"Botswana",keys:["botswana"]},
+  {flag:"🇨🇫",name:"Central African Republic",keys:["central african republic"]},
+  {flag:"🇨🇦",name:"Canada",keys:["canada"]},
+  {flag:"🇨🇨",name:"Cocos (Keeling) Islands",keys:["cocos (keeling) islands"]},
+  {flag:"🇨🇭",name:"Switzerland",keys:["switzerland"]},
+  {flag:"🇨🇱",name:"Chile",keys:["chile"]},
+  {flag:"🇨🇳",name:"China",keys:["china"]},
+  {flag:"🇨🇮",name:"Côte d'Ivoire",keys:["cote d'ivoire", "côte d'ivoire", "ivory coast"]},
+  {flag:"🇨🇲",name:"Cameroon",keys:["cameroon"]},
+  {flag:"🇨🇩",name:"Congo, The Democratic Republic of the",keys:["congo kinshasa", "congo, the democratic republic of the", "democratic republic of the congo", "dr congo", "drc"]},
+  {flag:"🇨🇬",name:"Congo",keys:["congo", "congo brazzaville", "republic of the congo"]},
+  {flag:"🇨🇰",name:"Cook Islands",keys:["cook islands"]},
+  {flag:"🇨🇴",name:"Colombia",keys:["colombia"]},
+  {flag:"🇰🇲",name:"Comoros",keys:["comoros"]},
+  {flag:"🇨🇻",name:"Cabo Verde",keys:["cabo verde", "cape verde"]},
+  {flag:"🇨🇷",name:"Costa Rica",keys:["costa rica"]},
+  {flag:"🇨🇺",name:"Cuba",keys:["cuba"]},
+  {flag:"🇨🇼",name:"Curaçao",keys:["curaçao"]},
+  {flag:"🇨🇽",name:"Christmas Island",keys:["christmas island"]},
+  {flag:"🇰🇾",name:"Cayman Islands",keys:["cayman islands"]},
+  {flag:"🇨🇾",name:"Cyprus",keys:["cyprus"]},
+  {flag:"🇨🇿",name:"Czechia",keys:["czech republic", "czechia"]},
+  {flag:"🇩🇪",name:"Germany",keys:["germany"]},
+  {flag:"🇩🇯",name:"Djibouti",keys:["djibouti"]},
+  {flag:"🇩🇲",name:"Dominica",keys:["dominica"]},
+  {flag:"🇩🇰",name:"Denmark",keys:["denmark"]},
+  {flag:"🇩🇴",name:"Dominican Republic",keys:["dominican republic"]},
+  {flag:"🇩🇿",name:"Algeria",keys:["algeria"]},
+  {flag:"🇪🇨",name:"Ecuador",keys:["ecuador"]},
+  {flag:"🇪🇬",name:"Egypt",keys:["egypt"]},
+  {flag:"🇪🇷",name:"Eritrea",keys:["eritrea"]},
+  {flag:"🇪🇭",name:"Western Sahara",keys:["western sahara"]},
+  {flag:"🇪🇸",name:"Spain",keys:["spain"]},
+  {flag:"🇪🇪",name:"Estonia",keys:["estonia"]},
+  {flag:"🇪🇹",name:"Ethiopia",keys:["ethiopia"]},
+  {flag:"🇫🇮",name:"Finland",keys:["finland"]},
+  {flag:"🇫🇯",name:"Fiji",keys:["fiji"]},
+  {flag:"🇫🇰",name:"Falkland Islands (Malvinas)",keys:["falkland islands (malvinas)"]},
+  {flag:"🇫🇷",name:"France",keys:["france"]},
+  {flag:"🇫🇴",name:"Faroe Islands",keys:["faroe islands"]},
+  {flag:"🇫🇲",name:"Micronesia, Federated States of",keys:["micronesia", "micronesia, federated states of"]},
+  {flag:"🇬🇦",name:"Gabon",keys:["gabon"]},
+  {flag:"🇬🇧",name:"United Kingdom",keys:["united kingdom"]},
+  {flag:"🇬🇪",name:"Georgia",keys:["georgia"]},
+  {flag:"🇬🇬",name:"Guernsey",keys:["guernsey"]},
+  {flag:"🇬🇭",name:"Ghana",keys:["ghana"]},
+  {flag:"🇬🇮",name:"Gibraltar",keys:["gibraltar"]},
+  {flag:"🇬🇳",name:"Guinea",keys:["guinea"]},
+  {flag:"🇬🇵",name:"Guadeloupe",keys:["guadeloupe"]},
+  {flag:"🇬🇲",name:"Gambia",keys:["gambia"]},
+  {flag:"🇬🇼",name:"Guinea-Bissau",keys:["guinea-bissau"]},
+  {flag:"🇬🇶",name:"Equatorial Guinea",keys:["equatorial guinea"]},
+  {flag:"🇬🇷",name:"Greece",keys:["greece"]},
+  {flag:"🇬🇩",name:"Grenada",keys:["grenada"]},
+  {flag:"🇬🇱",name:"Greenland",keys:["greenland"]},
+  {flag:"🇬🇹",name:"Guatemala",keys:["guatemala"]},
+  {flag:"🇬🇫",name:"French Guiana",keys:["french guiana"]},
+  {flag:"🇬🇺",name:"Guam",keys:["guam"]},
+  {flag:"🇬🇾",name:"Guyana",keys:["guyana"]},
+  {flag:"🇭🇰",name:"Hong Kong",keys:["hong kong"]},
+  {flag:"🇭🇲",name:"Heard Island and McDonald Islands",keys:["heard island and mcdonald islands"]},
+  {flag:"🇭🇳",name:"Honduras",keys:["honduras"]},
+  {flag:"🇭🇷",name:"Croatia",keys:["croatia"]},
+  {flag:"🇭🇹",name:"Haiti",keys:["haiti"]},
+  {flag:"🇭🇺",name:"Hungary",keys:["hungary"]},
+  {flag:"🇮🇩",name:"Indonesia",keys:["indonesia"]},
+  {flag:"🇮🇲",name:"Isle of Man",keys:["isle of man"]},
+  {flag:"🇮🇳",name:"India",keys:["india"]},
+  {flag:"🇮🇴",name:"British Indian Ocean Territory",keys:["british indian ocean territory"]},
+  {flag:"🇮🇪",name:"Ireland",keys:["ireland"]},
+  {flag:"🇮🇷",name:"Iran, Islamic Republic of",keys:["iran", "iran, islamic republic of"]},
+  {flag:"🇮🇶",name:"Iraq",keys:["iraq"]},
+  {flag:"🇮🇸",name:"Iceland",keys:["iceland"]},
+  {flag:"🇮🇱",name:"Israel",keys:["israel"]},
+  {flag:"🇮🇹",name:"Italy",keys:["italy"]},
+  {flag:"🇯🇲",name:"Jamaica",keys:["jamaica"]},
+  {flag:"🇯🇪",name:"Jersey",keys:["jersey"]},
+  {flag:"🇯🇴",name:"Jordan",keys:["jordan"]},
+  {flag:"🇯🇵",name:"Japan",keys:["japan"]},
+  {flag:"🇰🇿",name:"Kazakhstan",keys:["kazakhstan"]},
+  {flag:"🇰🇪",name:"Kenya",keys:["kenya"]},
+  {flag:"🇰🇬",name:"Kyrgyzstan",keys:["kyrgyzstan"]},
+  {flag:"🇰🇭",name:"Cambodia",keys:["cambodia"]},
+  {flag:"🇰🇮",name:"Kiribati",keys:["kiribati"]},
+  {flag:"🇰🇳",name:"Saint Kitts and Nevis",keys:["saint kitts and nevis"]},
+  {flag:"🇰🇷",name:"Korea, Republic of",keys:["korea, republic of", "republic of korea", "south korea"]},
+  {flag:"🇰🇼",name:"Kuwait",keys:["kuwait"]},
+  {flag:"🇱🇦",name:"Lao People's Democratic Republic",keys:["lao people's democratic republic", "laos"]},
+  {flag:"🇱🇧",name:"Lebanon",keys:["lebanon"]},
+  {flag:"🇱🇷",name:"Liberia",keys:["liberia"]},
+  {flag:"🇱🇾",name:"Libya",keys:["libya"]},
+  {flag:"🇱🇨",name:"Saint Lucia",keys:["saint lucia"]},
+  {flag:"🇱🇮",name:"Liechtenstein",keys:["liechtenstein"]},
+  {flag:"🇱🇰",name:"Sri Lanka",keys:["sri lanka"]},
+  {flag:"🇱🇸",name:"Lesotho",keys:["lesotho"]},
+  {flag:"🇱🇹",name:"Lithuania",keys:["lithuania"]},
+  {flag:"🇱🇺",name:"Luxembourg",keys:["luxembourg"]},
+  {flag:"🇱🇻",name:"Latvia",keys:["latvia"]},
+  {flag:"🇲🇴",name:"Macao",keys:["macao", "macau"]},
+  {flag:"🇲🇫",name:"Saint Martin (French part)",keys:["saint martin (french part)"]},
+  {flag:"🇲🇦",name:"Morocco",keys:["morocco"]},
+  {flag:"🇲🇨",name:"Monaco",keys:["monaco"]},
+  {flag:"🇲🇩",name:"Moldova, Republic of",keys:["moldova", "moldova, republic of"]},
+  {flag:"🇲🇬",name:"Madagascar",keys:["madagascar"]},
+  {flag:"🇲🇻",name:"Maldives",keys:["maldives"]},
+  {flag:"🇲🇽",name:"Mexico",keys:["mexico"]},
+  {flag:"🇲🇭",name:"Marshall Islands",keys:["marshall islands"]},
+  {flag:"🇲🇰",name:"North Macedonia",keys:["north macedonia"]},
+  {flag:"🇲🇱",name:"Mali",keys:["mali"]},
+  {flag:"🇲🇹",name:"Malta",keys:["malta"]},
+  {flag:"🇲🇲",name:"Myanmar",keys:["myanmar"]},
+  {flag:"🇲🇪",name:"Montenegro",keys:["montenegro"]},
+  {flag:"🇲🇳",name:"Mongolia",keys:["mongolia"]},
+  {flag:"🇲🇵",name:"Northern Mariana Islands",keys:["northern mariana islands"]},
+  {flag:"🇲🇿",name:"Mozambique",keys:["mozambique"]},
+  {flag:"🇲🇷",name:"Mauritania",keys:["mauritania"]},
+  {flag:"🇲🇸",name:"Montserrat",keys:["montserrat"]},
+  {flag:"🇲🇶",name:"Martinique",keys:["martinique"]},
+  {flag:"🇲🇺",name:"Mauritius",keys:["mauritius"]},
+  {flag:"🇲🇼",name:"Malawi",keys:["malawi"]},
+  {flag:"🇲🇾",name:"Malaysia",keys:["malaysia"]},
+  {flag:"🇾🇹",name:"Mayotte",keys:["mayotte"]},
+  {flag:"🇳🇦",name:"Namibia",keys:["namibia"]},
+  {flag:"🇳🇨",name:"New Caledonia",keys:["new caledonia"]},
+  {flag:"🇳🇪",name:"Niger",keys:["niger"]},
+  {flag:"🇳🇫",name:"Norfolk Island",keys:["norfolk island"]},
+  {flag:"🇳🇬",name:"Nigeria",keys:["nigeria"]},
+  {flag:"🇳🇮",name:"Nicaragua",keys:["nicaragua"]},
+  {flag:"🇳🇺",name:"Niue",keys:["niue"]},
+  {flag:"🇳🇱",name:"Netherlands",keys:["netherlands"]},
+  {flag:"🇳🇴",name:"Norway",keys:["norway"]},
+  {flag:"🇳🇵",name:"Nepal",keys:["nepal"]},
+  {flag:"🇳🇷",name:"Nauru",keys:["nauru"]},
+  {flag:"🇳🇿",name:"New Zealand",keys:["new zealand"]},
+  {flag:"🇴🇲",name:"Oman",keys:["oman"]},
+  {flag:"🇵🇰",name:"Pakistan",keys:["pakistan"]},
+  {flag:"🇵🇦",name:"Panama",keys:["panama"]},
+  {flag:"🇵🇳",name:"Pitcairn",keys:["pitcairn"]},
+  {flag:"🇵🇪",name:"Peru",keys:["peru"]},
+  {flag:"🇵🇭",name:"Philippines",keys:["philippines"]},
+  {flag:"🇵🇼",name:"Palau",keys:["palau"]},
+  {flag:"🇵🇬",name:"Papua New Guinea",keys:["papua new guinea"]},
+  {flag:"🇵🇱",name:"Poland",keys:["poland"]},
+  {flag:"🇵🇷",name:"Puerto Rico",keys:["puerto rico"]},
+  {flag:"🇰🇵",name:"Korea, Democratic People's Republic of",keys:["dprk", "korea, democratic people's republic of", "north korea"]},
+  {flag:"🇵🇹",name:"Portugal",keys:["portugal"]},
+  {flag:"🇵🇾",name:"Paraguay",keys:["paraguay"]},
+  {flag:"🇵🇸",name:"Palestine, State of",keys:["palestine", "palestine, state of"]},
+  {flag:"🇵🇫",name:"French Polynesia",keys:["french polynesia"]},
+  {flag:"🇶🇦",name:"Qatar",keys:["qatar"]},
+  {flag:"🇷🇪",name:"Réunion",keys:["réunion"]},
+  {flag:"🇷🇴",name:"Romania",keys:["romania"]},
+  {flag:"🇷🇺",name:"Russian Federation",keys:["russia", "russian federation"]},
+  {flag:"🇷🇼",name:"Rwanda",keys:["rwanda"]},
+  {flag:"🇸🇦",name:"Saudi Arabia",keys:["saudi arabia"]},
+  {flag:"🇸🇩",name:"Sudan",keys:["sudan"]},
+  {flag:"🇸🇳",name:"Senegal",keys:["senegal"]},
+  {flag:"🇸🇬",name:"Singapore",keys:["singapore"]},
+  {flag:"🇬🇸",name:"South Georgia and the South Sandwich Islands",keys:["south georgia and the south sandwich islands"]},
+  {flag:"🇸🇭",name:"Saint Helena, Ascension and Tristan da Cunha",keys:["saint helena, ascension and tristan da cunha"]},
+  {flag:"🇸🇯",name:"Svalbard and Jan Mayen",keys:["svalbard and jan mayen"]},
+  {flag:"🇸🇧",name:"Solomon Islands",keys:["solomon islands"]},
+  {flag:"🇸🇱",name:"Sierra Leone",keys:["sierra leone"]},
+  {flag:"🇸🇻",name:"El Salvador",keys:["el salvador"]},
+  {flag:"🇸🇲",name:"San Marino",keys:["san marino"]},
+  {flag:"🇸🇴",name:"Somalia",keys:["somalia"]},
+  {flag:"🇵🇲",name:"Saint Pierre and Miquelon",keys:["saint pierre and miquelon"]},
+  {flag:"🇷🇸",name:"Serbia",keys:["serbia"]},
+  {flag:"🇸🇸",name:"South Sudan",keys:["south sudan"]},
+  {flag:"🇸🇹",name:"Sao Tome and Principe",keys:["sao tome and principe"]},
+  {flag:"🇸🇷",name:"Suriname",keys:["suriname"]},
+  {flag:"🇸🇰",name:"Slovakia",keys:["slovakia"]},
+  {flag:"🇸🇮",name:"Slovenia",keys:["slovenia"]},
+  {flag:"🇸🇪",name:"Sweden",keys:["sweden"]},
+  {flag:"🇸🇿",name:"Eswatini",keys:["eswatini", "swaziland"]},
+  {flag:"🇸🇽",name:"Sint Maarten (Dutch part)",keys:["sint maarten (dutch part)"]},
+  {flag:"🇸🇨",name:"Seychelles",keys:["seychelles"]},
+  {flag:"🇸🇾",name:"Syrian Arab Republic",keys:["syria", "syrian arab republic"]},
+  {flag:"🇹🇨",name:"Turks and Caicos Islands",keys:["turks and caicos islands"]},
+  {flag:"🇹🇩",name:"Chad",keys:["chad"]},
+  {flag:"🇹🇬",name:"Togo",keys:["togo"]},
+  {flag:"🇹🇭",name:"Thailand",keys:["thailand"]},
+  {flag:"🇹🇯",name:"Tajikistan",keys:["tajikistan"]},
+  {flag:"🇹🇰",name:"Tokelau",keys:["tokelau"]},
+  {flag:"🇹🇲",name:"Turkmenistan",keys:["turkmenistan"]},
+  {flag:"🇹🇱",name:"Timor-Leste",keys:["timor-leste"]},
+  {flag:"🇹🇴",name:"Tonga",keys:["tonga"]},
+  {flag:"🇹🇹",name:"Trinidad and Tobago",keys:["trinidad and tobago"]},
+  {flag:"🇹🇳",name:"Tunisia",keys:["tunisia"]},
+  {flag:"🇹🇷",name:"Türkiye",keys:["turkiye", "türkiye"]},
+  {flag:"🇹🇻",name:"Tuvalu",keys:["tuvalu"]},
+  {flag:"🇹🇼",name:"Taiwan, Province of China",keys:["taiwan, province of china"]},
+  {flag:"🇹🇿",name:"Tanzania, United Republic of",keys:["tanzania", "tanzania, united republic of"]},
+  {flag:"🇺🇬",name:"Uganda",keys:["uganda"]},
+  {flag:"🇺🇦",name:"Ukraine",keys:["ukraine"]},
+  {flag:"🇺🇲",name:"United States Minor Outlying Islands",keys:["united states minor outlying islands"]},
+  {flag:"🇺🇾",name:"Uruguay",keys:["uruguay"]},
+  {flag:"🇺🇸",name:"United States",keys:["united states"]},
+  {flag:"🇺🇿",name:"Uzbekistan",keys:["uzbekistan"]},
+  {flag:"🇻🇦",name:"Holy See (Vatican City State)",keys:["holy see (vatican city state)", "vatican", "vatican city"]},
+  {flag:"🇻🇨",name:"Saint Vincent and the Grenadines",keys:["saint vincent and the grenadines"]},
+  {flag:"🇻🇪",name:"Venezuela, Bolivarian Republic of",keys:["venezuela", "venezuela, bolivarian republic of"]},
+  {flag:"🇻🇬",name:"Virgin Islands, British",keys:["virgin islands, british"]},
+  {flag:"🇻🇮",name:"Virgin Islands, U.S.",keys:["virgin islands, u.s."]},
+  {flag:"🇻🇳",name:"Viet Nam",keys:["viet nam", "vietnam"]},
+  {flag:"🇻🇺",name:"Vanuatu",keys:["vanuatu"]},
+  {flag:"🇼🇫",name:"Wallis and Futuna",keys:["wallis and futuna"]},
+  {flag:"🇼🇸",name:"Samoa",keys:["samoa"]},
+  {flag:"🇾🇪",name:"Yemen",keys:["yemen"]},
+  {flag:"🇿🇦",name:"South Africa",keys:["south africa"]},
+  {flag:"🇿🇲",name:"Zambia",keys:["zambia"]},
+  {flag:"🇿🇼",name:"Zimbabwe",keys:["zimbabwe"]},
+  {flag:"🇽🇰",name:"Kosovo",keys:["kosovo"]}
+];
+const liveEmojiToCountryName = new Map([
+  ["🇦🇼", "Aruba"],
+  ["🇦🇫", "Afghanistan"],
+  ["🇦🇴", "Angola"],
+  ["🇦🇮", "Anguilla"],
+  ["🇦🇽", "Åland Islands"],
+  ["🇦🇱", "Albania"],
+  ["🇦🇩", "Andorra"],
+  ["🇦🇪", "United Arab Emirates"],
+  ["🇦🇷", "Argentina"],
+  ["🇦🇲", "Armenia"],
+  ["🇦🇸", "American Samoa"],
+  ["🇦🇶", "Antarctica"],
+  ["🇹🇫", "French Southern Territories"],
+  ["🇦🇬", "Antigua and Barbuda"],
+  ["🇦🇺", "Australia"],
+  ["🇦🇹", "Austria"],
+  ["🇦🇿", "Azerbaijan"],
+  ["🇧🇮", "Burundi"],
+  ["🇧🇪", "Belgium"],
+  ["🇧🇯", "Benin"],
+  ["🇧🇶", "Bonaire, Sint Eustatius and Saba"],
+  ["🇧🇫", "Burkina Faso"],
+  ["🇧🇩", "Bangladesh"],
+  ["🇧🇬", "Bulgaria"],
+  ["🇧🇭", "Bahrain"],
+  ["🇧🇸", "Bahamas"],
+  ["🇧🇦", "Bosnia and Herzegovina"],
+  ["🇧🇱", "Saint Barthélemy"],
+  ["🇧🇾", "Belarus"],
+  ["🇧🇿", "Belize"],
+  ["🇧🇲", "Bermuda"],
+  ["🇧🇴", "Bolivia, Plurinational State of"],
+  ["🇧🇷", "Brazil"],
+  ["🇧🇧", "Barbados"],
+  ["🇧🇳", "Brunei Darussalam"],
+  ["🇧🇹", "Bhutan"],
+  ["🇧🇻", "Bouvet Island"],
+  ["🇧🇼", "Botswana"],
+  ["🇨🇫", "Central African Republic"],
+  ["🇨🇦", "Canada"],
+  ["🇨🇨", "Cocos (Keeling) Islands"],
+  ["🇨🇭", "Switzerland"],
+  ["🇨🇱", "Chile"],
+  ["🇨🇳", "China"],
+  ["🇨🇮", "Côte d'Ivoire"],
+  ["🇨🇲", "Cameroon"],
+  ["🇨🇩", "Congo, The Democratic Republic of the"],
+  ["🇨🇬", "Congo"],
+  ["🇨🇰", "Cook Islands"],
+  ["🇨🇴", "Colombia"],
+  ["🇰🇲", "Comoros"],
+  ["🇨🇻", "Cabo Verde"],
+  ["🇨🇷", "Costa Rica"],
+  ["🇨🇺", "Cuba"],
+  ["🇨🇼", "Curaçao"],
+  ["🇨🇽", "Christmas Island"],
+  ["🇰🇾", "Cayman Islands"],
+  ["🇨🇾", "Cyprus"],
+  ["🇨🇿", "Czechia"],
+  ["🇩🇪", "Germany"],
+  ["🇩🇯", "Djibouti"],
+  ["🇩🇲", "Dominica"],
+  ["🇩🇰", "Denmark"],
+  ["🇩🇴", "Dominican Republic"],
+  ["🇩🇿", "Algeria"],
+  ["🇪🇨", "Ecuador"],
+  ["🇪🇬", "Egypt"],
+  ["🇪🇷", "Eritrea"],
+  ["🇪🇭", "Western Sahara"],
+  ["🇪🇸", "Spain"],
+  ["🇪🇪", "Estonia"],
+  ["🇪🇹", "Ethiopia"],
+  ["🇫🇮", "Finland"],
+  ["🇫🇯", "Fiji"],
+  ["🇫🇰", "Falkland Islands (Malvinas)"],
+  ["🇫🇷", "France"],
+  ["🇫🇴", "Faroe Islands"],
+  ["🇫🇲", "Micronesia, Federated States of"],
+  ["🇬🇦", "Gabon"],
+  ["🇬🇧", "United Kingdom"],
+  ["🇬🇪", "Georgia"],
+  ["🇬🇬", "Guernsey"],
+  ["🇬🇭", "Ghana"],
+  ["🇬🇮", "Gibraltar"],
+  ["🇬🇳", "Guinea"],
+  ["🇬🇵", "Guadeloupe"],
+  ["🇬🇲", "Gambia"],
+  ["🇬🇼", "Guinea-Bissau"],
+  ["🇬🇶", "Equatorial Guinea"],
+  ["🇬🇷", "Greece"],
+  ["🇬🇩", "Grenada"],
+  ["🇬🇱", "Greenland"],
+  ["🇬🇹", "Guatemala"],
+  ["🇬🇫", "French Guiana"],
+  ["🇬🇺", "Guam"],
+  ["🇬🇾", "Guyana"],
+  ["🇭🇰", "Hong Kong"],
+  ["🇭🇲", "Heard Island and McDonald Islands"],
+  ["🇭🇳", "Honduras"],
+  ["🇭🇷", "Croatia"],
+  ["🇭🇹", "Haiti"],
+  ["🇭🇺", "Hungary"],
+  ["🇮🇩", "Indonesia"],
+  ["🇮🇲", "Isle of Man"],
+  ["🇮🇳", "India"],
+  ["🇮🇴", "British Indian Ocean Territory"],
+  ["🇮🇪", "Ireland"],
+  ["🇮🇷", "Iran, Islamic Republic of"],
+  ["🇮🇶", "Iraq"],
+  ["🇮🇸", "Iceland"],
+  ["🇮🇱", "Israel"],
+  ["🇮🇹", "Italy"],
+  ["🇯🇲", "Jamaica"],
+  ["🇯🇪", "Jersey"],
+  ["🇯🇴", "Jordan"],
+  ["🇯🇵", "Japan"],
+  ["🇰🇿", "Kazakhstan"],
+  ["🇰🇪", "Kenya"],
+  ["🇰🇬", "Kyrgyzstan"],
+  ["🇰🇭", "Cambodia"],
+  ["🇰🇮", "Kiribati"],
+  ["🇰🇳", "Saint Kitts and Nevis"],
+  ["🇰🇷", "Korea, Republic of"],
+  ["🇰🇼", "Kuwait"],
+  ["🇱🇦", "Lao People's Democratic Republic"],
+  ["🇱🇧", "Lebanon"],
+  ["🇱🇷", "Liberia"],
+  ["🇱🇾", "Libya"],
+  ["🇱🇨", "Saint Lucia"],
+  ["🇱🇮", "Liechtenstein"],
+  ["🇱🇰", "Sri Lanka"],
+  ["🇱🇸", "Lesotho"],
+  ["🇱🇹", "Lithuania"],
+  ["🇱🇺", "Luxembourg"],
+  ["🇱🇻", "Latvia"],
+  ["🇲🇴", "Macao"],
+  ["🇲🇫", "Saint Martin (French part)"],
+  ["🇲🇦", "Morocco"],
+  ["🇲🇨", "Monaco"],
+  ["🇲🇩", "Moldova, Republic of"],
+  ["🇲🇬", "Madagascar"],
+  ["🇲🇻", "Maldives"],
+  ["🇲🇽", "Mexico"],
+  ["🇲🇭", "Marshall Islands"],
+  ["🇲🇰", "North Macedonia"],
+  ["🇲🇱", "Mali"],
+  ["🇲🇹", "Malta"],
+  ["🇲🇲", "Myanmar"],
+  ["🇲🇪", "Montenegro"],
+  ["🇲🇳", "Mongolia"],
+  ["🇲🇵", "Northern Mariana Islands"],
+  ["🇲🇿", "Mozambique"],
+  ["🇲🇷", "Mauritania"],
+  ["🇲🇸", "Montserrat"],
+  ["🇲🇶", "Martinique"],
+  ["🇲🇺", "Mauritius"],
+  ["🇲🇼", "Malawi"],
+  ["🇲🇾", "Malaysia"],
+  ["🇾🇹", "Mayotte"],
+  ["🇳🇦", "Namibia"],
+  ["🇳🇨", "New Caledonia"],
+  ["🇳🇪", "Niger"],
+  ["🇳🇫", "Norfolk Island"],
+  ["🇳🇬", "Nigeria"],
+  ["🇳🇮", "Nicaragua"],
+  ["🇳🇺", "Niue"],
+  ["🇳🇱", "Netherlands"],
+  ["🇳🇴", "Norway"],
+  ["🇳🇵", "Nepal"],
+  ["🇳🇷", "Nauru"],
+  ["🇳🇿", "New Zealand"],
+  ["🇴🇲", "Oman"],
+  ["🇵🇰", "Pakistan"],
+  ["🇵🇦", "Panama"],
+  ["🇵🇳", "Pitcairn"],
+  ["🇵🇪", "Peru"],
+  ["🇵🇭", "Philippines"],
+  ["🇵🇼", "Palau"],
+  ["🇵🇬", "Papua New Guinea"],
+  ["🇵🇱", "Poland"],
+  ["🇵🇷", "Puerto Rico"],
+  ["🇰🇵", "Korea, Democratic People's Republic of"],
+  ["🇵🇹", "Portugal"],
+  ["🇵🇾", "Paraguay"],
+  ["🇵🇸", "Palestine, State of"],
+  ["🇵🇫", "French Polynesia"],
+  ["🇶🇦", "Qatar"],
+  ["🇷🇪", "Réunion"],
+  ["🇷🇴", "Romania"],
+  ["🇷🇺", "Russian Federation"],
+  ["🇷🇼", "Rwanda"],
+  ["🇸🇦", "Saudi Arabia"],
+  ["🇸🇩", "Sudan"],
+  ["🇸🇳", "Senegal"],
+  ["🇸🇬", "Singapore"],
+  ["🇬🇸", "South Georgia and the South Sandwich Islands"],
+  ["🇸🇭", "Saint Helena, Ascension and Tristan da Cunha"],
+  ["🇸🇯", "Svalbard and Jan Mayen"],
+  ["🇸🇧", "Solomon Islands"],
+  ["🇸🇱", "Sierra Leone"],
+  ["🇸🇻", "El Salvador"],
+  ["🇸🇲", "San Marino"],
+  ["🇸🇴", "Somalia"],
+  ["🇵🇲", "Saint Pierre and Miquelon"],
+  ["🇷🇸", "Serbia"],
+  ["🇸🇸", "South Sudan"],
+  ["🇸🇹", "Sao Tome and Principe"],
+  ["🇸🇷", "Suriname"],
+  ["🇸🇰", "Slovakia"],
+  ["🇸🇮", "Slovenia"],
+  ["🇸🇪", "Sweden"],
+  ["🇸🇿", "Eswatini"],
+  ["🇸🇽", "Sint Maarten (Dutch part)"],
+  ["🇸🇨", "Seychelles"],
+  ["🇸🇾", "Syrian Arab Republic"],
+  ["🇹🇨", "Turks and Caicos Islands"],
+  ["🇹🇩", "Chad"],
+  ["🇹🇬", "Togo"],
+  ["🇹🇭", "Thailand"],
+  ["🇹🇯", "Tajikistan"],
+  ["🇹🇰", "Tokelau"],
+  ["🇹🇲", "Turkmenistan"],
+  ["🇹🇱", "Timor-Leste"],
+  ["🇹🇴", "Tonga"],
+  ["🇹🇹", "Trinidad and Tobago"],
+  ["🇹🇳", "Tunisia"],
+  ["🇹🇷", "Türkiye"],
+  ["🇹🇻", "Tuvalu"],
+  ["🇹🇼", "Taiwan, Province of China"],
+  ["🇹🇿", "Tanzania, United Republic of"],
+  ["🇺🇬", "Uganda"],
+  ["🇺🇦", "Ukraine"],
+  ["🇺🇲", "United States Minor Outlying Islands"],
+  ["🇺🇾", "Uruguay"],
+  ["🇺🇸", "United States"],
+  ["🇺🇿", "Uzbekistan"],
+  ["🇻🇦", "Holy See (Vatican City State)"],
+  ["🇻🇨", "Saint Vincent and the Grenadines"],
+  ["🇻🇪", "Venezuela, Bolivarian Republic of"],
+  ["🇻🇬", "Virgin Islands, British"],
+  ["🇻🇮", "Virgin Islands, U.S."],
+  ["🇻🇳", "Viet Nam"],
+  ["🇻🇺", "Vanuatu"],
+  ["🇼🇫", "Wallis and Futuna"],
+  ["🇼🇸", "Samoa"],
+  ["🇾🇪", "Yemen"],
+  ["🇿🇦", "South Africa"],
+  ["🇿🇲", "Zambia"],
+  ["🇿🇼", "Zimbabwe"],
+  ["🇽🇰", "Kosovo"],
+]);
+const liveFlagEmojiMap = Object.fromEntries(liveCountryMap.map(c=>[c.flag,c]));
+const liveRecent = new Map();
+const liveUserSpawnCounts = new Map();
+
+function cleanLiveUsername(v){
+  let s=String(v??'').trim();
+  if(!s)return '@viewer';
+  if(!s.startsWith('@'))s='@'+s.replace(/\s+/g,'_');
+  return s.slice(0,30);
+}
+function liveFlagToISO2(flag){
+  const pts=[...String(flag||'')].map(ch=>ch.codePointAt(0));
+  if(pts.length!==2) return '';
+  const a=pts[0]-0x1F1E6, b=pts[1]-0x1F1E6;
+  if(a<0||a>25||b<0||b>25) return '';
+  return String.fromCharCode(65+a,65+b).toLowerCase();
+}
+const liveCountryCodeMap=new Map();
+for(const c of liveCountryMap){
+  const code=liveFlagToISO2(c.flag);
+  if(code) liveCountryCodeMap.set(code,c);
+}
+const liveShortAliases={uk:'🇬🇧',gb:'🇬🇧',england:'🇬🇧',gbr:'🇬🇧',us:'🇺🇸',usa:'🇺🇸',unitedstates:'🇺🇸',unitedstatesofamerica:'🇺🇸',uae:'🇦🇪',ae:'🇦🇪',are:'🇦🇪',korea:'🇰🇷',kr:'🇰🇷',sk:'🇰🇷',kor:'🇰🇷',russia:'🇷🇺',ru:'🇷🇺',rus:'🇷🇺',turkey:'🇹🇷',tr:'🇹🇷',tur:'🇹🇷',iran:'🇮🇷',ir:'🇮🇷',irn:'🇮🇷',israel:'🇮🇱',il:'🇮🇱',isr:'🇮🇱',india:'🇮🇳',in:'🇮🇳',ind:'🇮🇳',bangladesh:'🇧🇩',bd:'🇧🇩',bgd:'🇧🇩',pakistan:'🇵🇰',pk:'🇵🇰',pak:'🇵🇰',china:'🇨🇳',cn:'🇨🇳',chn:'🇨🇳',japan:'🇯🇵',jp:'🇯🇵',jpn:'🇯🇵',brazil:'🇧🇷',br:'🇧🇷',bra:'🇧🇷',canada:'🇨🇦',ca:'🇨🇦',can:'🇨🇦',france:'🇫🇷',fr:'🇫🇷',fra:'🇫🇷',germany:'🇩🇪',de:'🇩🇪',deu:'🇩🇪',italy:'🇮🇹',it:'🇮🇹',ita:'🇮🇹',spain:'🇪🇸',es:'🇪🇸',esp:'🇪🇸',mexico:'🇲🇽',mx:'🇲🇽',mex:'🇲🇽',australia:'🇦🇺',au:'🇦🇺',aus:'🇦🇺'};
+for(const [code,flag] of Object.entries(liveShortAliases)){
+  const c=liveCountryMap.find(x=>x.flag===flag);
+  if(c) liveCountryCodeMap.set(code,c);
+}
+function normalizeLiveText(v){
+  return String(v??'').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').trim();
+}
+function countryFromComment(text){
+  const raw=String(text??'').trim();
+  const s=normalizeLiveText(raw);
+  if(!s)return null;
+  // Short country aliases/codes are case-insensitive (US/us/Us, USA/usa/Usa, etc.).
+  const compact=s.replace(/[^a-z]/g,'');
+  if(compact && liveShortAliases[compact]){
+    const c=liveCountryMap.find(x=>x.flag===liveShortAliases[compact]);
+    if(c)return c;
+  }
+  // Flag emoji in the comment.
+  for(const c of liveCountryMap){ if(raw.includes(c.flag)) return c; }
+  // Exact 2-letter ISO-style code anywhere in a short comment, e.g. BD / IN / US.
+  const tokens=s.replace(/[^a-z]+/g,' ').trim().split(/\s+/).filter(Boolean);
+  for(const token of tokens){
+    if(token.length===2){
+      const c=liveCountryCodeMap.get(token);
+      if(c)return c;
+    }
+    if(liveShortAliases[token]){
+      const c=liveCountryMap.find(x=>x.flag===liveShortAliases[token]);
+      if(c)return c;
+    }
+  }
+  // Full country names / aliases.
+  for(const c of liveCountryMap){
+    for(const k of c.keys){
+      const kk=normalizeLiveText(k);
+      if(kk && new RegExp('(^|[^a-z])'+kk.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&')+'([^a-z]|$)','i').test(s)) return c;
+    }
+  }
+  return null;
+}
+function showLiveToast(user,country){
+  const feed=document.getElementById('liveCommentFeed');
+  if(!feed)return;
+  const el=document.createElement('div');
+  el.className='liveCommentToast';
+  el.innerHTML=`<span class="toastName">${user}</span><span class="toastCountry">${country.name}</span><span class="toastFlag">${country.flag}</span><span>→ FLAG SPAWN</span>`;
+  feed.appendChild(el);
+  while(feed.children.length>3)feed.removeChild(feed.firstChild);
+  setTimeout(()=>el.remove(),4300);
+}
+
+// Cumulative live-comment flag counts for the Top 3 leaderboard.
+const liveCommenterStats=new Map();
+let liveLeaderboardTimer=null;
+let liveLeaderboardCycleStarted=false;
+function recordLiveCommenter(user){
+  const key=String(user||'@viewer').trim().toLowerCase()||'@viewer';
+  const display=String(user||'@viewer').trim()||'@viewer';
+  const old=liveCommenterStats.get(key);
+  liveCommenterStats.set(key,{name:old?.name||display,count:(old?.count||0)+1,lastCommentAt:Date.now()});
+  ensureLiveLeaderboard();
+}
+function getLiveTopCommenters(){
+  const now=Date.now();
+  const active=[];
+  for(const [key,item] of liveCommenterStats){
+    if(!item.lastCommentAt || now-item.lastCommentAt<=180000){
+      active.push(item);
+    }
+  }
+  return active.sort((a,b)=>b.count-a.count || a.name.localeCompare(b.name)).slice(0,3);
+}
+function positionLiveLeaderboard(){
+  const join=document.getElementById('join');
+  const feed=document.getElementById('liveCommentLeaderboard');
+  if(!join||!feed)return;
+  feed.style.left=join.offsetLeft+'px';
+  feed.style.top=(join.offsetTop+join.offsetHeight+8)+'px';
+  feed.style.width=join.offsetWidth+'px';
+}
+window.addEventListener('load',positionLiveLeaderboard);
+window.addEventListener('resize',positionLiveLeaderboard);
+function showLiveLeaderboardEntry(rank,item){
+  const feed=document.getElementById('liveCommentLeaderboard');
+  if(!feed||!item)return;
+  feed.innerHTML='';
+  const el=document.createElement('div');
+  el.className='liveLbBox';
+  el.innerHTML=`<div class="liveLbRank">TOP ${rank}</div><div class="liveLbName">${item.name} <span class="liveLbCount">➤ 🚩 ${item.count}</span></div>`;
+  feed.appendChild(el);
+  setTimeout(()=>{if(el.parentNode===feed)el.remove()},3000);
+}
+function runLiveLeaderboardCycle(){
+  const top=getLiveTopCommenters();
+  if(!top.length){
+    liveLeaderboardTimer=setTimeout(runLiveLeaderboardCycle,3000);
+    return;
+  }
+  let rank=0;
+  const next=()=>{
+    if(rank>=top.length){
+      const feed=document.getElementById('liveCommentLeaderboard');
+      if(feed)feed.innerHTML='';
+      liveLeaderboardTimer=setTimeout(runLiveLeaderboardCycle,25000);
+      return;
+    }
+    showLiveLeaderboardEntry(rank+1,top[rank]);
+    rank++;
+    liveLeaderboardTimer=setTimeout(next,3000);
+  };
+  next();
+}
+function ensureLiveLeaderboard(){
+  if(liveLeaderboardCycleStarted)return;
+  liveLeaderboardCycleStarted=true;
+  if(liveLeaderboardTimer)clearTimeout(liveLeaderboardTimer);
+  runLiveLeaderboardCycle();
+}
+// Flag size is based on how many flags are currently inside the circle.
+// This applies equally to normal/spawned flags and live-comment flags.
+function getCircleFlagSize(big=false){
+  const count=flags.filter(f=>!f.dead).length;
+  // 16+ flags: keep the original size rule.
+  if(count>15) return big?72:45;
+  // 10-15 flags.
+  if(count>=10) return big?78:48;
+  // 5-9 flags.
+  if(count>=5) return big?83:52;
+  // 1-4 flags.
+  return big?85:60;
+}
+function getCircleFlagRadius(big=false){
+  const size=getCircleFlagSize(big);
+  return (big?size*.4722:size*.5833)*settings.flagSize;
+}
+// Keep EVERY flag's size synchronized with the current number of live flags in the circle.
+// 16+ => original 45/72, 10-15 => 48/78, 5-9 => 52/83, 1-4 => 60/85. Comment flags follow the same rule.
+function refreshCircleFlagSizes(){
+  for(const f of flags){
+    if(f.dead) continue;
+    const big=!!f.big;
+    const size=getCircleFlagSize(big);
+    f.size=size*settings.flagSize;
+    f.r=getCircleFlagRadius(big);
+  }
+}
+
+
+function spawnLiveCommentFlag(username,text){
+  const country=countryFromComment(text);
+  if(!country)return false;
+  const user=cleanLiveUsername(username);
+  // Prevent the same user/country pair from flooding the arena repeatedly.
+  const dedupeKey=user+'|'+country.flag;
+  const now=performance.now();
+  if(now-(liveRecent.get(dedupeKey)||0)<3000)return true;
+  liveRecent.set(dedupeKey,now);
+
+  // Count live spawns per user. Every 5th live spawn (5, 10, 15, ...) from the same user is a special large flag.
+  const liveSpawnCount=(liveUserSpawnCounts.get(user)||0)+1;
+  liveUserSpawnCounts.set(user,liveSpawnCount);
+  const isFifthLiveSpawn=(liveSpawnCount%5===0);
+
+  // Spawn from a random point inside the arena with a strong outward bounce.
+  const a=Math.random()*Math.PI*2, rr=Math.random()*Math.max(20,R*.40);
+  const speed=420+Math.random()*430;
+  const f={
+    flag:country.flag,name:user,country:country.name,
+    x:cx+Math.cos(a)*rr,y:cy+Math.sin(a)*rr,
+    vx:Math.cos(a)*speed+(Math.random()-.5)*220,
+    vy:Math.sin(a)*speed+(Math.random()-.5)*220,
+    size:getCircleFlagSize(isFifthLiveSpawn),r:getCircleFlagRadius(isFifthLiveSpawn),
+    big:isFifthLiveSpawn,shield:0,life:0,fanHit:0,live:true,liveT:0
+  };
+  flags.push(f);
+  recordLiveCommenter(user);
+  return true;
+}
+// Public bridge for a streaming/chat connector.
+let livePowerupLastAt=0;
+const LIVE_POWERUP_COOLDOWN=5000;
+window.receiveLiveComment=function(comment){
+  if(!ytChat.commentsEnabled) return false;
+  const c=(comment&&typeof comment==='object')?comment:{text:String(comment||''),username:'@viewer'};
+  const rawText=String(c.text??c.message??'').trim();
+  const command=rawText.toLowerCase();
+  // Live comments: SHIELD / shield / Shield and BOMB / bomb / Bomb all work.
+  // Keep the original 5-second anti-spam limit for comment-triggered power-ups.
+  if(command==='shield' || command==='bomb'){
+    const now=performance.now();
+    if(now-livePowerupLastAt>=LIVE_POWERUP_COOLDOWN){
+      livePowerupLastAt=now;
+      if(command==='shield') spawnShieldPower();
+      else spawnBomb();
+      return true;
+    }
+    return false;
+  }
+  return spawnLiveCommentFlag(c.username??c.user??c.author??'@viewer',rawText);
+};
+window.addEventListener('message',e=>{
+  const d=e.data;
+  if(d && d.type==='liveComment') window.receiveLiveComment(d);
+});
+
+// ============================================================
+// YOUTUBE LIVE CHAT CONNECTOR
+// Uses the public YouTube Data API v3 from the browser. No OAuth is
+// needed for public live chat; the user supplies an API key + video ID.
+// The connector only forwards NEW chat messages to receiveLiveComment().
+// ============================================================
+const ytChat={
+  timer:null,pollingInterval:5000,apiKeys:['','','','',''],apiIndex:0,quota:new Set(),networkFailed:new Set(),videoId:'',liveChatId:'',
+  nextPageToken:'',seen:new Set(),connected:false,autoSwitch:true,commentsEnabled:true
+,abortController:null};
+function ytActiveKey(){return ytChat.apiKeys[ytChat.apiIndex]||'';}
+function ytFirstConfigured(start=0){
+  for(let n=0;n<5;n++){ const i=(start+n)%5; if(ytChat.apiKeys[i]) return i; }
+  return -1;
+}
+function ytNextUsable(exclude=-1){
+  for(let n=1;n<=5;n++){ const i=(ytChat.apiIndex+n)%5; if(i!==exclude && ytChat.apiKeys[i] && !ytChat.quota.has(i) && !ytChat.networkFailed.has(i)) return i; }
+  return -1;
+}
+function ytPoolState(){
+  const active=ytChat.apiIndex+1;
+  const usable=ytChat.apiKeys.filter((k,i)=>k && !ytChat.quota.has(i) && !ytChat.networkFailed.has(i)).length;
+  const remaining=Math.max(0, usable - (ytActiveKey() && !ytChat.quota.has(ytChat.apiIndex) && !ytChat.networkFailed.has(ytChat.apiIndex) ? 1 : 0));
+  return {active,remaining};
+}
+function ytRenderPool(){
+  const cur=document.getElementById('ytCurrentApi'), rem=document.getElementById('ytRemainingApis'), sw=document.getElementById('ytAutoSwitch'), rows=document.getElementById('ytApiRows');
+  const st=ytPoolState();
+  if(cur)cur.textContent='#'+st.active;
+  if(rem)rem.textContent=st.remaining;
+  if(sw){sw.textContent=ytChat.autoSwitch?'ON':'OFF';sw.style.color=ytChat.autoSwitch?'#52ff8a':'#ff6b6b';}
+  if(rows){
+    rows.innerHTML=ytChat.apiKeys.map((k,i)=>{
+      let icon='⚪', label='Standby';
+      if(!k) label='Not set';
+      else if(ytChat.quota.has(i)){icon='🔴';label='Quota Exceeded';}
+      else if(ytChat.networkFailed.has(i)){icon='🟠';label='Network Failed';}
+      else if(i===ytChat.apiIndex && ytChat.connected){icon='🟢';label='Active';}
+      else if(i===ytChat.apiIndex){icon='🟡';label='Selected';}
+      return '<div>'+icon+' API '+(i+1)+' — '+label+'</div>';
+    }).join('');
+  }
+}
+function ytCurrentState(reason='status'){
+  return {apiKeys:ytChat.apiKeys.slice(),videoId:ytChat.videoId,connected:ytChat.connected,currentApi:ytChat.apiIndex+1,quota:[...ytChat.quota],networkFailed:[...ytChat.networkFailed],autoSwitch:ytChat.autoSwitch,commentsEnabled:ytChat.commentsEnabled,statusText:document.getElementById('ytStatus')?.textContent||'OFF',reason};
+}
+function ytSetStatus(text,ok=false){
+  const el=document.getElementById('ytStatus');
+  if(el){el.textContent=text;el.style.color=ok?'#52ff8a':'#ffe92e';}
+  ytRenderPool();
+  syncYTState(ytCurrentState('status'));
+}
+function ytExtractVideoId(v){
+  const s=String(v||'').trim(); if(!s)return '';
+  try{
+    const u=new URL(s);
+    if(u.hostname.includes('youtu.be')) return u.pathname.replace(/^\//,'').split('/')[0];
+    const q=u.searchParams.get('v'); if(q)return q;
+    const m=u.pathname.match(/\/(?:live|shorts|embed)\/([^/?]+)/); if(m)return m[1];
+  }catch(e){}
+  return s.split(/[?&#]/)[0].trim();
+}
+async function ytJson(url){
+  if(ytChat.abortController?.signal.aborted){const e=new Error('YouTube connector disconnected.');e.aborted=true;throw e;}
+  const key=ytActiveKey();
+  if(!key){const e=new Error('No API key is configured for the selected API.');e.noApiKey=true;throw e;}
+  const sep=url.includes('?')?'&':'?';
+  let r;
+  try{
+    r=await fetch(url+sep+'key='+encodeURIComponent(key),{cache:'no-store',signal:ytChat.abortController?.signal});
+  }catch(fetchErr){
+    if(fetchErr?.name==='AbortError' || ytChat.abortController?.signal.aborted){const e=new Error('YouTube connector disconnected.');e.aborted=true;throw e;}
+    const e=new Error('Network error while contacting YouTube.');
+    e.networkError=true;
+    e.original=fetchErr;
+    throw e;
+  }
+  let data=null; try{data=await r.json()}catch(e){}
+  if(!r.ok){
+    const reasons=(data?.error?.errors||[]).map(x=>x.reason).filter(Boolean);
+    const reason=reasons.find(x=>/quotaExceeded|dailyLimitExceeded/i.test(x))||data?.error?.status||'';
+    const e=new Error(data?.error?.message||('YouTube API error '+r.status));
+    e.status=r.status;e.reason=reason;
+    e.quotaExceeded=/^quotaExceeded$|^dailyLimitExceeded$/i.test(reason);
+    // Temporary upstream/network-style HTTP failures get the same retry treatment.
+    e.networkError=[502,503,504].includes(r.status);
+    throw e;
+  }
+  return data;
+}
+function ytSleep(ms){return new Promise(r=>setTimeout(r,ms));}
+async function ytRequest(buildUrl){
+  let switchGuard=0;
+  while(switchGuard++<5){
+    if(ytChat.abortController?.signal.aborted || !ytChat.abortController){const e=new Error('YouTube connector disconnected.');e.aborted=true;throw e;}
+    if(!ytActiveKey()){
+      const first=ytFirstConfigured(ytChat.apiIndex);
+      if(first<0){ const e=new Error('No configured YouTube API keys.'); e.noApiKey=true; throw e; }
+      ytChat.apiIndex=first;
+      ytRenderPool();
+    }
+    let networkRetries=0;
+    while(true){
+      try{
+        const result=await ytJson(buildUrl());
+        ytChat.networkFailed.delete(ytChat.apiIndex);
+        return result;
+      }catch(err){
+        // A real quota error switches immediately; do NOT waste retries on it.
+        if(err.quotaExceeded && ytChat.autoSwitch){
+          ytChat.quota.add(ytChat.apiIndex);
+          const next=ytNextUsable(ytChat.apiIndex);
+          if(next>=0){
+            ytChat.apiIndex=next;
+            ytSetStatus('SWITCHING → API #'+(next+1));
+            syncYTState({apiKeys:ytChat.apiKeys,videoId:ytChat.videoId,connected:ytChat.connected,currentApi:ytChat.apiIndex+1,quota:[...ytChat.quota],networkFailed:[...ytChat.networkFailed],reason:'quotaExceeded'});
+            break;
+          }
+          const e=new Error('All configured YouTube API quotas are exhausted.');
+          e.allQuota=true; throw e;
+        }
+        // Network/temporary failure: retry the SAME API twice before switching.
+        if(err.networkError && ytChat.autoSwitch){
+          if(networkRetries<2){
+            networkRetries++;
+            ytSetStatus('API #'+(ytChat.apiIndex+1)+' RETRY '+networkRetries+'/2');
+            const hint=document.getElementById('ytHint');
+            if(hint)hint.textContent='Network problem — retrying API #'+(ytChat.apiIndex+1)+' ('+networkRetries+'/2)…';
+            await ytSleep(networkRetries===1?1000:2000);
+            if(ytChat.abortController?.signal.aborted || !ytChat.abortController){const e=new Error('YouTube connector disconnected.');e.aborted=true;throw e;}
+            continue;
+          }
+          const failedIndex=ytChat.apiIndex;
+          ytChat.networkFailed.add(failedIndex);
+          const next=ytNextUsable(failedIndex);
+          if(next>=0){
+            ytChat.apiIndex=next;
+            ytSetStatus('NETWORK SWITCH → API #'+(next+1));
+            syncYTState({apiKeys:ytChat.apiKeys,videoId:ytChat.videoId,connected:ytChat.connected,currentApi:ytChat.apiIndex+1,quota:[...ytChat.quota],networkFailed:[...ytChat.networkFailed],reason:'network'});
+            break;
+          }
+        }
+        throw err;
+      }
+    }
+  }
+  throw new Error('API pool switch limit reached.');
+}
+function ytStop(){
+  if(ytChat.abortController){try{ytChat.abortController.abort();}catch(e){} ytChat.abortController=null;}
+  if(ytChat.timer){clearTimeout(ytChat.timer);ytChat.timer=null;}
+  ytChat.connected=false;ytChat.liveChatId='';ytChat.nextPageToken='';ytChat.seen.clear();
+  ytSetStatus('OFF');
+}
+function ytSetCommentsEnabled(enabled){
+  ytChat.commentsEnabled=!!enabled;
+  const b=document.getElementById('ytCommentsToggle');
+  if(b){b.textContent=ytChat.commentsEnabled?'💬 COMMENTS: ON':'💬 COMMENTS: OFF'; b.style.background=ytChat.commentsEnabled?'':'#3a1720';}
+  if(!ytChat.commentsEnabled){
+    if(ytChat.timer){clearTimeout(ytChat.timer);ytChat.timer=null;}
+    if(ytChat.connected) ytSetStatus('CONNECTED · COMMENTS OFF',true);
+  }else if(ytChat.connected && !ytChat.timer){
+    ytSetStatus('CONNECTED',true);
+    ytChat.timer=setTimeout(ytPoll,0);
+  }
+  syncYTState({apiKeys:ytChat.apiKeys,videoId:ytChat.videoId,connected:ytChat.connected,currentApi:ytChat.apiIndex+1,quota:[...ytChat.quota],networkFailed:[...ytChat.networkFailed],commentsEnabled:ytChat.commentsEnabled});
+}
+function ytLoadPool(){
+  const before=ytChat.apiKeys.slice();
+  for(let i=0;i<5;i++){
+    const el=document.getElementById('ytApiKey'+(i+1));
+    ytChat.apiKeys[i]=el?.value.trim()||'';
+  }
+  // Backward-compatible old saved key, if present.
+  if(!ytChat.apiKeys[0]){
+    try{
+      const old=JSON.parse(localStorage.getItem('fbx_yt_sync')||'{}');
+      if(old.apiKey) ytChat.apiKeys[0]=old.apiKey;
+    }catch(e){}
+  }
+  for(let i=0;i<5;i++){
+    if(ytChat.apiKeys[i]!==before[i]){ ytChat.quota.delete(i); ytChat.networkFailed.delete(i); }
+  }
+  if(!ytChat.apiKeys[ytChat.apiIndex]){
+    const first=ytFirstConfigured(0); if(first>=0) ytChat.apiIndex=first;
+  }
+}
+async function ytFindLiveChatId(){
+  const id=ytExtractVideoId(document.getElementById('ytVideoId')?.value);
+  if(!id)throw new Error('Enter the YouTube live video ID or URL.');
+  const data=await ytRequest(()=> 'https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id='+encodeURIComponent(id));
+  const details=data?.items?.[0]?.liveStreamingDetails;
+  if(!details?.activeLiveChatId) throw new Error('This video is not currently live, or live chat is unavailable.');
+  ytChat.videoId=id; return details.activeLiveChatId;
+}
+async function ytWarmup(){
+  const data=await ytRequest(()=> 'https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet,authorDetails&liveChatId='+encodeURIComponent(ytChat.liveChatId)+'&maxResults=200');
+  ytChat.nextPageToken=data.nextPageToken||'';
+  (data.items||[]).forEach(item=>ytChat.seen.add(item.id));
+  ytChat.pollingInterval=Math.max(1000,Number(data.pollingIntervalMillis)||5000);
+  return ytChat.pollingInterval;
+}
+async function ytPoll(){
+  if(!ytChat.connected || !ytChat.commentsEnabled){ytChat.timer=null;return;}
+  try{
+    const data=await ytRequest(()=> 'https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet,authorDetails&liveChatId='+encodeURIComponent(ytChat.liveChatId)+'&maxResults=200'+(ytChat.nextPageToken?'&pageToken='+encodeURIComponent(ytChat.nextPageToken):''));
+    ytChat.nextPageToken=data.nextPageToken||ytChat.nextPageToken;
+    for(const item of (data.items||[])){
+      if(ytChat.seen.has(item.id))continue;
+      ytChat.seen.add(item.id);
+      const text=item?.snippet?.displayMessage||item?.snippet?.textMessageDetails?.messageText||'';
+      const displayName=item?.authorDetails?.displayName||'viewer';
+      if(text)window.receiveLiveComment({username:displayName.startsWith('@')?displayName:'@'+displayName,text});
+    }
+    if(ytChat.seen.size>5000){const a=Array.from(ytChat.seen);ytChat.seen=new Set(a.slice(-2500));}
+    ytSetStatus('CONNECTED',true);
+    ytChat.pollingInterval=Math.max(3000,Number(data.pollingIntervalMillis)||ytChat.pollingInterval||5000);
+    ytChat.timer=setTimeout(ytPoll,ytChat.pollingInterval);
+  }catch(err){
+    // YouTube can return rateLimitExceeded when polling again before its
+    // server-provided refresh interval. This is NOT a dead API key and
+    // must never be shown as a connection failure or trigger API switching.
+    const rateLimited=/rateLimitExceeded|sent too soon|more frequently than YouTube's refresh rates/i.test(String(err?.message||'')) || /rateLimitExceeded/i.test(String(err?.reason||''));
+    if(rateLimited){
+      ytSetStatus('CONNECTED',true);
+      const hint=document.getElementById('ytHint');
+      if(hint)hint.textContent='Connected. Waiting for YouTube refresh interval…';
+      ytChat.timer=setTimeout(ytPoll,Math.max(5000,ytChat.pollingInterval||7000));
+      return;
+    }
+    if(err.allQuota){
+      ytChat.connected=false; ytSetStatus('ALL QUOTAS EXCEEDED');
+      const hint=document.getElementById('ytHint'); if(hint)hint.textContent='All configured YouTube API quotas are exhausted.';
+      return;
+    }
+    ytSetStatus('RETRY');
+    const hint=document.getElementById('ytHint'); if(hint)hint.textContent='YouTube: '+err.message+' — retrying…';
+    if(ytChat.connected)ytChat.timer=setTimeout(ytPoll,5000);
+  }
+}
+async function ytConnect(){
+  ytStop();
+  ytChat.abortController=new AbortController();
+  ytChat.connected=false;
+  ytLoadPool();
+  ytChat.quota=new Set(); ytChat.networkFailed=new Set(); ytChat.apiIndex=ytFirstConfigured(0); ytChat.seen.clear();
+  ytRenderPool();
+  if(ytChat.apiIndex<0){ytSetStatus('API KEY');return;}
+  ytSetStatus('CONNECTING…');
+  const hint=document.getElementById('ytHint'); if(hint)hint.textContent='Finding the live chat using API #'+(ytChat.apiIndex+1)+'…';
+  try{
+    ytChat.liveChatId=await ytFindLiveChatId();
+    ytChat.pollingInterval=await ytWarmup();
+    if(ytChat.abortController?.signal.aborted || !ytChat.abortController) throw Object.assign(new Error('YouTube connector disconnected.'),{aborted:true});
+    ytChat.connected=true;
+    ytSetStatus('CONNECTED',true);
+    if(hint)hint.textContent='Connected. API pool will auto-switch on quotaExceeded. Old comments were skipped.';
+    if(ytChat.commentsEnabled) ytChat.timer=setTimeout(ytPoll,ytChat.pollingInterval||5000);
+    syncYTState({apiKeys:ytChat.apiKeys,videoId:ytChat.videoId,connected:true,currentApi:ytChat.apiIndex+1,quota:[...ytChat.quota],networkFailed:[...ytChat.networkFailed]});
+  }catch(err){
+    if(err?.aborted){ return; }
+    ytSetStatus(err.allQuota?'ALL QUOTAS EXCEEDED':'ERROR');
+    if(hint)hint.textContent='YouTube: '+err.message;
+    if(ytChat.connected || ytChat.abortController) ytStop();
+  }
+}
+
+
+// ============================================================
+// EVENT VOICES
+function speakEventVoice(text){
+  try{
+    if(!('speechSynthesis' in window))return;
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.rate=1.0; u.pitch=1.0; u.volume=1.0;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+// ============================================================
+// BOMB + SHIELD POWER-UPS
+// One power-up appears every 15 seconds, alternating: BOMB -> SHIELD -> BOMB.
+// Never spawn a bomb and shield together.
+const POWERUP_SPAWN_Y=()=>Math.max(34,H*.055);
+const BOMB_RADIUS_MIN=105, BOMB_RADIUS_MAX=135;
+// Three straight vertical spawn lanes: center-left, center, center-right.
+function randomPowerupLane(){
+  // Use the outer/last area of the left and right fan blades as the
+  // spawn lanes.  Center stays exactly on the arena center line.
+  const lane=Math.floor(Math.random()*3)-1;
+  if(lane===0)return cx;
+  const sep=Math.min(180,R*.40);
+  const fanScale=settings.fanSize||1;
+  const bladeLen=Math.min(108, Math.max(68,R*.22))*fanScale;
+  const outerOffset=Math.min(R*.82,sep+bladeLen*.90);
+  return cx + lane*outerOffset;
+}
+function randomPowerupTargetY(laneX){
+  const dx=Math.abs(laneX-cx);
+  const maxY=Math.sqrt(Math.max(0,R*R-dx*dx));
+  const top=cy-maxY*.78, bottom=cy+maxY*.72;
+  return top + Math.random()*(bottom-top);
+}
+
+function spawnBomb(){
+  const laneX=randomPowerupLane();
+  arenaBombs.push({
+    x:laneX,y:POWERUP_SPAWN_Y(),r:46,vy:Math.max(42,H*.095),
+    targetY:randomPowerupTargetY(laneX),
+    state:'fall',life:0,flash:0,exploded:false
+  });
+}
+function spawnShieldPower(){
+  // Shield comes straight down from the same center spawn point and stops
+  // inside the circle at the top-center; it never travels sideways.
+  const flagR=24*settings.flagSize;
+  const tx=randomPowerupLane(), ty=randomPowerupTargetY(tx);
+  arenaShields.push({
+    x:tx,y:POWERUP_SPAWN_Y(),tx,ty,
+    size:Math.max(flagR*2,48), shieldW:Math.max(flagR*2,48)*1.18, shieldH:Math.max(flagR*2,48)*.72,
+    vy:Math.max(80,H*.17),state:'fall',life:0,idleLife:0,activeLife:0,activeFor:null,activeUntil:0,broken:0
+  });
+}
+
+function spawnLauncherGun(){
+  const laneX=randomPowerupLane();
+  arenaGuns.push({
+    x:laneX,y:POWERUP_SPAWN_Y(),tx:laneX,ty:randomPowerupTargetY(laneX),
+    size:30,vy:Math.max(80,H*.17),state:'fall',life:0,idleLife:0,
+    activeFor:null,shotsLeft:26,shotCooldown:.25,volleyCount:0,hitCounts:new Map(),broken:0,id:++gunSerial,activeLife:0
+  });
+}
+function fireLauncherGun(g){
+  if(!g.activeFor || g.shotsLeft<=0 || g.state!=='attached')return;
+  const carrier=g.activeFor;
+  const candidates=flags.filter(f=>!f.dead && f!==carrier);
+  if(!candidates.length)return;
+  let target=candidates[0], best=Infinity;
+  for(const f of candidates){
+    const d=Math.hypot(f.x-carrier.x,f.y-carrier.y);
+    if(d<best){best=d;target=f;}
+  }
+  const dx=target.x-carrier.x, dy=target.y-carrier.y, dist=Math.hypot(dx,dy)||1;
+  const ux=dx/dist, uy=dy/dist, px=-uy, py=ux;
+  const speed=Math.max(300,H*.48);
+  const muzzle=Math.max(34,carrier.size*.95), spread=Math.max(8,carrier.size*.16);
+  for(let k=0;k<2 && g.shotsLeft>0;k++){
+    const side=k===0?-1:1;
+    const sx=carrier.x+ux*muzzle+px*spread*side;
+    const sy=carrier.y+uy*muzzle+py*spread*side;
+    gunBullets.push({x:sx,y:sy,vx:ux*speed,vy:uy*speed,target,life:0,maxLife:5,gun:g,trail:[],dead:false});
+      playFBXSFX('gun');
+    g.shotsLeft--;
+  }
+  g.volleyCount=(g.volleyCount||0)+1;
+}
+function updateLauncherGuns(dt){
+  for(const g of arenaGuns){
+    if(g.broken)continue;
+    if(g.state==='fall'){
+      g.y+=g.vy*dt;
+      if(g.y>=g.ty){g.y=g.ty;g.x=g.tx;g.state='idle';speakEventVoice('LAUNCHER GUN SPAWN!');}
+    }
+    if(g.state==='idle'&&!g.activeFor){
+      g.idleLife+=dt;
+      if(g.idleLife>=10){g.broken=.01;continue;}
+      for(const f of flags){
+        if(f.dead||f.gunPower)continue;
+        if(Math.hypot(f.x-g.x,f.y-g.y)<g.size*.62+f.r){
+          g.activeFor=f; f.gunPower=g; g.state='attached'; g.shotCooldown=0.2; g.idleLife=0; g.activeLife=0;
+          break;
+        }
+      }
+    }
+    if(g.state==='attached'&&g.activeFor){
+      const f=g.activeFor;
+      if(f.dead||f.gunPower!==g){g.broken=.01;g.activeFor=null;continue;}
+      g.x=f.x; g.y=f.y; g.activeLife+=dt; g.shotCooldown-=dt;
+      if(g.shotsLeft>0 && g.shotCooldown<=0){
+        fireLauncherGun(g);
+        g.shotCooldown=1.0;
+      }
+      if(g.shotsLeft<=0 && !gunBullets.some(b=>b.gun===g&&!b.dead)){
+        f.gunPower=0; g.activeFor=null; g.broken=.01;
+      }
+    }
+  }
+  for(const b of gunBullets){
+    if(b.dead)continue;
+    b.life+=dt;
+    if(b.life>b.maxLife){b.dead=true;continue;}
+    b.x+=b.vx*dt; b.y+=b.vy*dt;
+    const target=b.target;
+    if(target&&!target.dead&&Math.hypot(b.x-target.x,b.y-target.y)<target.r+12){
+      b.dead=true;
+      const g=b.gun;
+      if(g){
+        const hits=(g.hitCounts.get(target)||0)+1;
+        g.hitCounts.set(target,hits); target.gunHits=hits;
+        if(hits>=4 && !target.dead){
+          target.dead=true;
+          eliminateFlag(target);
+        }
+      }
+    }
+  }
+  gunBullets=gunBullets.filter(b=>!b.dead);
+  arenaGuns=arenaGuns.filter(g=>!g.broken);
+}
+function explodeBomb(b){
+  playFBXSFX('bomb');
+  // Visual-only bomb explosion: never modify flag position, velocity, bounce, rotation, or gameplay physics.
+  b.state='explode';b.life=0;b.exploded=true;
+  const radius=BOMB_RADIUS_MIN+Math.random()*(BOMB_RADIUS_MAX-BOMB_RADIUS_MIN);
+  b.radius=radius;
+}
+function breakAttachedShield(f){
+  if(!f||!f.shieldPower)return;
+  const sh=f.shieldPower;
+  f.shieldPower=0;f.shield=0;
+  f.shieldBreakFx=.38;
+  if(sh){if(sh.expiryTimer){clearTimeout(sh.expiryTimer);sh.expiryTimer=null;} sh.broken=.55;sh.activeFor=null;sh.state='broken';}
+  const d=Math.hypot(f.x-cx,f.y-cy)||1;
+  const max=R-f.r-5;
+  f.x=cx+(f.x-cx)/d*Math.min(d,max);
+  f.y=cy+(f.y-cy)/d*Math.min(d,max);
+  const nx=(cx-f.x)/(Math.hypot(cx-f.x,cy-f.y)||1);
+  const ny=(cy-f.y)/(Math.hypot(cx-f.x,cy-f.y)||1);
+  f.vx=nx*520 + (Math.random()-.5)*90;
+  f.vy=ny*520 + (Math.random()-.5)*90;
+}
+function updatePowerups(dt){
+  powerupClock+=dt;
+  // Launcher Gun appears only once every 60 seconds.
+  // Bomb/Shield use the normal 15-second spacing. When a Gun is due,
+  // it takes that slot; the following slot is always Bomb, then Shield.
+  if(running && powerupClock>=nextPowerupAt){
+    if(powerupClock>=nextGunAt-0.001){
+      spawnLauncherGun();
+      gunClock=powerupClock;
+      nextGunAt+=60;
+      nextPowerupType='bomb';
+    }else if(nextPowerupType==='bomb'){
+      spawnBomb();
+      nextPowerupType='shield';
+    }else{
+      spawnShieldPower();
+      nextPowerupType='bomb';
+    }
+    nextPowerupAt+=15;
+  }
+  for(const b of arenaBombs){
+    if(b.state==='fall'){
+      b.y+=b.vy*dt;
+      if(b.y>=b.targetY)explodeBomb(b);
+    }else if(b.state==='explode'){
+      b.life+=dt;
+      b.flash=Math.max(0,.32-b.life);
+      if(b.life>.60)b.state='done';
+    }
+  }
+  arenaBombs=arenaBombs.filter(b=>b.state!=='done');
+  for(const sh of arenaShields){
+    if(sh.broken)continue;
+    if(sh.state==='fall'){
+      // Straight vertical movement only. Stop as soon as it reaches its
+      // fixed point inside the circle.
+      sh.y+=sh.vy*dt;
+      if(sh.y>=sh.ty){sh.y=sh.ty;sh.x=sh.tx;sh.state='idle';}
+    }
+    if(sh.state==='idle'&&!sh.activeFor){
+      sh.idleLife+=dt;
+      if(sh.idleLife>=10){ sh.broken=.01; sh.state='broken'; continue; }
+      for(const f of flags){
+        if(f.dead || f.shieldPower)continue;
+        if(Math.hypot(f.x-sh.x,f.y-sh.y)<sh.size*.55+f.r){
+          // Power-up shield disappears from its landing spot and attaches to the flag.
+          sh.activeFor=f;f.shieldPower=sh;f.shield=999;sh.state='attached';sh.activeLife=0;sh.activeUntil=performance.now()+15000;
+          // Once activated, the shield becomes a square exactly matching the flag's size.
+          sh.size=f.size;
+          sh.shieldW=f.size*1.18;
+          sh.shieldH=f.size*.72;
+          sh.x=f.x;sh.y=f.y;
+          f.shieldActiveUntil=sh.activeUntil;
+          speakEventVoice('MAGIC SHIELD ACTIVATED!');
+          // Hard 15-second expiry: clear the protection even if a frame/update is delayed.
+          sh.expiryTimer=setTimeout(()=>{
+            if(sh.activeFor===f && f.shieldPower===sh){
+              f.shieldPower=0; f.shield=0; f.shieldActiveUntil=0;
+              sh.activeFor=null; sh.broken=.01; sh.state='broken';
+            }
+          },15000);
+          break;
+        }
+      }
+    }
+    if(sh.activeFor){
+      sh.activeLife+=dt;
+      if(performance.now()>=sh.activeUntil){
+        // Shield protection is strictly limited to 15 seconds after activation.
+
+        const f=sh.activeFor;
+        if(f && f.shieldPower===sh){f.shieldPower=0;f.shield=0;f.shieldActiveUntil=0;}
+        if(sh.expiryTimer){clearTimeout(sh.expiryTimer);sh.expiryTimer=null;}
+        sh.activeFor=null;sh.broken=.01;sh.state='broken';
+      }else if(sh.activeFor.dead||sh.activeFor.shieldPower!==sh){sh.activeFor=null;}
+    }
+  }
+  for(const f of flags){
+    if(f.shieldBreakFx)f.shieldBreakFx=Math.max(0,f.shieldBreakFx-dt);
+    if(!f.shieldPower)continue;
+    const d=Math.hypot(f.x-cx,f.y-cy),max=R-f.r-3;
+    if(d>=max&&gapOpen>=1&&flagInGap(f.x,f.y)&&(f.vx*(f.x-cx)+f.vy*(f.y-cy))>0){
+      breakAttachedShield(f);
+      // Important: do not run the normal elimination check in this frame.
+    }
+  }
+  arenaShields=arenaShields.filter(sh=>!sh.broken&&!sh.activeFor);
+}
+
+let roundCountryPool=[];let roundCountryIndex=0;
+function rebuildRoundPool(){
+ const all=liveCountryMap.map(x=>[x.flag,'@'+(x.name||'country')]);
+ const block=((activeRound-1)%5)*50;
+ roundCountryPool=all.slice(block,block+50);
+ if(roundCountryPool.length<50) roundCountryPool=all.slice(0,50);
+ roundCountryIndex=0;
+}
+
+function makeFlag(big=false){
+ if(!roundCountryPool.length||roundCountryIndex>=roundCountryPool.length) rebuildRoundPool();
+ const c=roundCountryPool[roundCountryIndex++];
+ const a=Math.random()*Math.PI*2, rr=Math.random()*R*.58;
+ const size=getCircleFlagSize(big);
+ return {flag:c[0],name:'',x:cx+Math.cos(a)*rr,y:cy+Math.sin(a)*rr,vx:(Math.random()-.5)*1125,vy:(Math.random()-.5)*1125,size:size*settings.flagSize,r:getCircleFlagRadius(big),big,shield:0,life:0,fanHit:0};
+}
+function isBigSpawn(index){return index===0||index===10||index===20||index===30||index===40}
+function spawnOne(){
+ if(spawnedTotal>=spawnLimit)return;
+ const big=isBigSpawn(spawnedTotal);
+ flags.push(makeFlag(big));
+ spawnedTotal++;
+}
+function spawn(n=activeLimit){rebuildRoundPool();flags=[];eliminated=[];elimSeq=0;spawnedTotal=0;arenaBombs=[];arenaShields=[];arenaGuns=[];gunBullets=[];powerupClock=0;nextPowerupAt=15;nextPowerupType='gun';gunClock=0;nextGunAt=60;gunSerial=0;for(let i=0;i<n;i++)spawnOne()}
+function eliminateFlag(f){
+ if(f.deadHandled)return;
+ f.deadHandled=true;
+ f.elimT=0;
+ // Eliminated flags start just below the circle and fall straight down like rain.
+ const dropAngle=Math.atan2(f.y-cy,f.x-cx);
+ f.elimStartX=cx+Math.cos(dropAngle)*(R+18);
+ f.elimStartY=cy+Math.sin(dropAngle)*(R+18);
+ f.elimFallX=f.elimStartX;
+ f.elimFallY=f.elimStartY;
+ eliminated.push(f);
+ playFBXSFX('eliminated');
+ // Keep 30 flags active until all 50 flags for the round have spawned.
+ if(spawnedTotal<spawnLimit)setTimeout(()=>{if(running)spawnOne()},120);
+}
+function circlePoint(angle,rad){return [cx+Math.cos(angle)*rad,cy+Math.sin(angle)*rad]}
+
+
+const __emojiFlagCanvas=document.createElement('canvas');
+const __emojiFlagCtx=__emojiFlagCanvas.getContext('2d',{willReadFrequently:true});
+const __emojiFlagCache=new Map();
+
+function drawEmojiFlagRect(flag,x,y,w,h){
+  try{
+    if(!flag)return false;
+    let item=__emojiFlagCache.get(flag);
+    if(!item){
+      const S=256;
+      __emojiFlagCanvas.width=S; __emojiFlagCanvas.height=S;
+      const c=__emojiFlagCtx;
+      c.clearRect(0,0,S,S);
+      c.font='220px "Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif';
+      c.textAlign='center'; c.textBaseline='middle';
+      c.fillStyle='#000';
+      c.fillText(flag,S/2,S/2);
+      const im=c.getImageData(0,0,S,S);
+      let minX=S,minY=S,maxX=-1,maxY=-1;
+      for(let yy=0;yy<S;yy++){
+        for(let xx=0;xx<S;xx++){
+          if(im.data[(yy*S+xx)*4+3]>12){
+            if(xx<minX)minX=xx;
+            if(xx>maxX)maxX=xx;
+            if(yy<minY)minY=yy;
+            if(yy>maxY)maxY=yy;
+          }
+        }
+      }
+      if(maxX<0)return false;
+      const pad=2;
+      minX=Math.max(0,minX-pad); minY=Math.max(0,minY-pad);
+      maxX=Math.min(S-1,maxX+pad); maxY=Math.min(S-1,maxY+pad);
+      const crop=document.createElement('canvas');
+      crop.width=maxX-minX+1; crop.height=maxY-minY+1;
+      const cc=crop.getContext('2d');
+      cc.drawImage(__emojiFlagCanvas,minX,minY,crop.width,crop.height,0,0,crop.width,crop.height);
+
+      try{
+        const id=cc.getImageData(0,0,crop.width,crop.height);
+        const d=id.data,w=crop.width,h=crop.height;
+
+        for(let x=0;x<w;x++){
+          let top=-1,bottom=-1;
+          for(let y=0;y<h;y++){
+            if(d[(y*w+x)*4+3]>20){ top=y; break; }
+          }
+          for(let y=h-1;y>=0;y--){
+            if(d[(y*w+x)*4+3]>20){ bottom=y; break; }
+          }
+
+          if(top>=0){
+            const p=(top*w+x)*4;
+            for(let y=0;y<top;y++){
+              const q=(y*w+x)*4;
+              d[q]=d[p]; d[q+1]=d[p+1]; d[q+2]=d[p+2]; d[q+3]=255;
+            }
+          }
+          if(bottom>=0){
+            const p=(bottom*w+x)*4;
+            for(let y=bottom+1;y<h;y++){
+              const q=(y*w+x)*4;
+              d[q]=d[p]; d[q+1]=d[p+1]; d[q+2]=d[p+2]; d[q+3]=255;
+            }
+          }
+        }
+        cc.putImageData(id,0,0);
+      }catch(e){}
+
+      item=crop;
+      __emojiFlagCache.set(flag,item);
+    }
+    ctx.save();
+    ctx.imageSmoothingEnabled=true;
+    ctx.drawImage(item,x,y,w,h);
+    ctx.strokeStyle='rgba(0,0,0,.35)';
+    ctx.lineWidth=1.5;
+    ctx.strokeRect(x,y,w,h);
+    ctx.restore();
+    return true;
+  }catch(e){ return false; }
+}
+
+const __pcFlagImageCache=new Map();
+
+function __pcFlagCode(flag){
+  try{
+    const pts=[...String(flag||'')].map(ch=>ch.codePointAt(0));
+    if(pts.length!==2)return '';
+    const a=pts[0]-0x1F1E6, b=pts[1]-0x1F1E6;
+    if(a<0||a>25||b<0||b>25)return '';
+    return String.fromCharCode(97+a,97+b);
+  }catch(e){return '';}
+}
+function __loadPCFlagImage(flag){
+  if(!flag)return null;
+  let img=__pcFlagImageCache.get(flag);
+  if(img)return img;
+  const code=__pcFlagCode(flag);
+  if(!code)return null;
+  img=new Image();
+  img.crossOrigin='anonymous';
+  img.decoding='async';
+  img.onload=()=>{__pcFlagImageCache.set(flag,img);};
+  img.onerror=()=>{__pcFlagImageCache.set(flag,false);};
+  // Clean rectangular country flag source. No emoji glyphs, shadows or texture.
+  img.src='https://flagcdn.com/w160/'+code+'.png';
+  __pcFlagImageCache.set(flag,img);
+  return img;
+}
+function drawCountryFlag(flag,size,big){
+  const w=size*1.18, h=size*.72, x=-w/2, y=-h/2;
+
+  // PC ONLY: use a clean rectangular country-flag image.
+  // Mobile continues through the original emoji renderer below.
+  if(window.innerWidth>700){
+    const img=__loadPCFlagImage(flag);
+    if(img && img.complete && img.naturalWidth){
+      ctx.save();
+      ctx.imageSmoothingEnabled=true;
+      ctx.drawImage(img,x,y,w,h);
+      ctx.restore();
+      ctx.strokeStyle='rgba(0,0,0,.35)';
+      ctx.lineWidth=1.5;
+      ctx.strokeRect(x,y,w,h);
+      return;
+    }
+  }
+
+  // Original mobile renderer — unchanged.
+  ctx.save();
+  ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
+  if(!drawEmojiFlagRect(flag,x,y,w,h)){
+    ctx.fillStyle='#d9d9d9';ctx.fillRect(x,y,w,h);
+  }
+  ctx.restore();
+  ctx.strokeStyle='rgba(0,0,0,.35)';
+  ctx.lineWidth=1.5;
+  ctx.strokeRect(x,y,w,h);
+}
+
+function flagInGap(x,y){
+  // The visible gap is centered on the rotating circle's current angle.
+  let a=Math.atan2(y-cy,x-cx)-rotation;
+  a=Math.atan2(Math.sin(a),Math.cos(a));
+  return Math.abs(a) < ringGap/2;
+}
+
+function fan(x,y,ang){
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.rotate(ang);
+
+  // Extra-long 3-blade fan: the blade is visibly long on desktop and mobile.
+  const fanScale=settings.fanSize||1;
+  const bladeLen=Math.min(108, Math.max(68, R*.22))*fanScale;
+  const bladeW=Math.max(13, Math.min(20, R*.038))*fanScale;
+  const hub=12*fanScale;
+
+  for(let i=0;i<3;i++){
+    ctx.save();
+    ctx.rotate(i*Math.PI*2/3);
+    ctx.fillStyle=settings.fanColor||'#375c65';
+    ctx.strokeStyle='rgba(20,45,55,.75)';
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(-bladeW*.32,-hub*.25);
+    ctx.bezierCurveTo(-bladeW*.95,-bladeLen*.22,-bladeW*.82,-bladeLen*.72,0,-bladeLen);
+    ctx.bezierCurveTo(bladeW*.85,-bladeLen*.72,bladeW*.72,-bladeLen*.20,bladeW*.35,-hub*.10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  ctx.beginPath();
+  ctx.arc(0,0,hub,0,Math.PI*2);
+  ctx.fillStyle='#c4a54b';
+  ctx.fill();
+  ctx.strokeStyle='#6d5b2b';
+  ctx.lineWidth=2;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(0,0,5*fanScale,0,Math.PI*2);
+  ctx.fillStyle='#706844';
+  ctx.fill();
+  ctx.restore();
+}
+function draw(){
+ ctx.clearRect(0,0,W,H);
+ // single large rotating circle with a small moving gap
+ ctx.save();ctx.translate(cx,cy);ctx.rotate(rotation);
+ const style=settings.style;
+ const ringStart=ringGap/2, ringEnd=Math.PI*2-ringGap/2;
+ ctx.strokeStyle=settings.white;ctx.lineWidth=9;ctx.shadowBlur=0;ctx.setLineDash([]);
+ if(style===2){ctx.shadowBlur=18;ctx.shadowColor=settings.white;ctx.lineWidth=10;}
+ if(style===3){ctx.setLineDash([8,9]);ctx.lineWidth=8;}
+ if(style===4){ctx.lineWidth=6;ctx.beginPath();ctx.arc(0,0,R,ringStart,ringEnd);ctx.stroke();ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,R-9,ringStart,ringEnd);ctx.stroke();}
+ else if(style===5){for(let q=0;q<3;q++){ctx.lineWidth=3;ctx.globalAlpha=1-q*.22;ctx.beginPath();ctx.arc(0,0,R-q*7,ringStart,ringEnd);ctx.stroke();}ctx.globalAlpha=1;}
+ else if(style===6){ctx.setLineDash([2,8]);ctx.lineWidth=8;}
+ else if(style===7){ctx.lineWidth=8+Math.sin(preRoundTime*5)*2;ctx.shadowBlur=14;ctx.shadowColor=settings.white;}
+ else if(style===8){ctx.lineWidth=5;ctx.setLineDash([18,5,3,5]);}
+ else if(style===9){ctx.lineWidth=12;ctx.setLineDash([40,8,10,8]);}
+ else if(style===10){ctx.lineWidth=5;}
+ else if(style===11){ctx.lineWidth=8;ctx.shadowBlur=24;ctx.shadowColor=settings.white;}
+ else if(style===12){ctx.lineWidth=4;ctx.setLineDash([24,4]);}
+ else if(style===13){ctx.lineWidth=14;ctx.globalAlpha=.65;}
+ else if(style===14){ctx.lineWidth=6;ctx.shadowBlur=8;ctx.shadowColor=settings.white;}
+ else if(style===15){ctx.lineWidth=8;ctx.setLineDash([12,3]);}
+ else if(style===16){ctx.lineWidth=7;ctx.setLineDash([4,12]);}
+ else if(style===17){ctx.lineWidth=5;ctx.setLineDash([55,4,4,4]);}
+ else if(style===18){ctx.lineWidth=8;ctx.setLineDash([18,18]);}
+ else if(style===19){ctx.lineWidth=10;ctx.shadowBlur=12;ctx.shadowColor='#35e9ff';}
+ else if(style===20){ctx.lineWidth=9;ctx.shadowBlur=20;ctx.shadowColor='#8d7cff';}
+ else if(style===21){ctx.lineWidth=9;ctx.shadowBlur=25;ctx.shadowColor='#ffe600';}
+ ctx.beginPath();ctx.arc(0,0,R,ringStart,ringEnd);ctx.stroke();
+ ctx.shadowBlur=0;ctx.setLineDash([]);ctx.globalAlpha=1;ctx.restore();
+ // subtle arena floor and configurable inner yellow circle
+ ctx.beginPath();ctx.arc(cx,cy,R-7,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,.045)';ctx.fill();
+ // Power-ups are drawn above the arena/fans so their effects are visible.
+ for(const b of arenaBombs){
+   if(b.state==='done')continue;
+   ctx.save();ctx.translate(b.x,b.y);
+   const pulse=b.state==='explode' ? Math.max(0,b.radius*(1-b.life/.48)) : 0;
+   ctx.shadowBlur=b.state==='explode'?34:18;ctx.shadowColor='#ff1d25';
+   ctx.fillStyle='#d71920';ctx.beginPath();ctx.arc(0,0,46,0,Math.PI*2);ctx.fill();
+   ctx.strokeStyle='#ff6468';ctx.lineWidth=4;ctx.stroke();
+   ctx.fillStyle='#ffefef';ctx.font='bold 48px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('💣',0,1);
+   if(b.state==='explode'){
+     // Isolated visual-only explosion. No flag physics are touched.
+     const t=Math.min(1,b.life/.42);
+     const ease=1-Math.pow(1-t,3);
+     const maxR=(b.radius||120)*1.68;
+     ctx.save();
+     ctx.globalCompositeOperation='lighter';
+     // Three expanding rings are purely visual and never touch flag physics.
+     const ringT=[t,Math.max(0,t-.11),Math.max(0,t-.22)];
+     const ringScale=[1,1.16,1.32];
+     for(let i=0;i<3;i++){
+       const rt=ringT[i];
+       const re=1-Math.pow(1-Math.min(1,rt),3);
+       ctx.globalAlpha=Math.max(0,(1-rt)*(1-i*.16));
+       ctx.strokeStyle=i===0?'#ffb21a':(i===1?'#ffd24a':'#fff08a');
+       ctx.lineWidth=Math.max(2,6*(1-rt)+1);
+       ctx.beginPath();
+       ctx.arc(0,0,maxR*ringScale[i]*(.10+.90*re),0,Math.PI*2);
+       ctx.stroke();
+     }
+     ctx.globalAlpha=Math.max(0,1-t*1.35);
+     ctx.fillStyle='#fff3a0';ctx.shadowBlur=28;ctx.shadowColor='#ff6b1a';
+     ctx.beginPath();ctx.arc(0,0,maxR*(.17+.11*(1-t)),0,Math.PI*2);ctx.fill();
+     ctx.restore();
+   }
+   ctx.restore();
+ }
+ // Draw a real rocket-launcher pickup while it is falling/idle.
+ // It descends from the same power-up spawn lanes; once a flag touches it,
+ // the attached launcher is drawn separately above that flag.
+ for(const g of arenaGuns){
+   if(g.broken || g.activeFor || g.state==='attached')continue;
+   ctx.save();
+   ctx.translate(g.x,g.y);
+   const bob=g.state==='idle' ? Math.sin(g.idleLife*4)*3 : 0;
+   ctx.translate(0,bob);
+   // Nose points downward while the launcher is dropping toward the arena.
+   ctx.rotate(Math.PI/2);
+   const s=g.size||58;
+   ctx.shadowBlur=20;ctx.shadowColor='#ffb300';
+   // Small pickup-sized launcher while falling/idle. It becomes large only after activation.
+   ctx.fillStyle='#8a8f98';ctx.strokeStyle='#20252b';ctx.lineWidth=2;
+   ctx.fillRect(-s*.62,-5,s*1.24,10);
+   ctx.fillStyle='#59616b';ctx.fillRect(-s*.48,-9,s*.72,5);
+   // Short barrel/nozzle for the pickup state.
+   ctx.fillStyle='#30363d';ctx.fillRect(s*.48,-7,s*.42,14);
+   ctx.fillStyle='#15191d';ctx.fillRect(s*.86,-6,s*.16,12);
+   // Rear grip/support.
+   ctx.fillStyle='#d19a16';ctx.fillRect(-9,7,18,18);
+   ctx.fillStyle='#ffd21a';ctx.fillRect(-s*.62,-5,s*.62,5);
+   // Small glowing indicator.
+   ctx.fillStyle='#7cff7c';ctx.beginPath();ctx.arc(-s*.55,-18,5,0,Math.PI*2);ctx.fill();
+   ctx.restore();
+ }
+ for(const b of gunBullets){
+   ctx.save();
+   for(let i=0;i<b.trail.length;i++){
+     const t=b.trail[i],a=(i+1)/b.trail.length*.55;
+     ctx.globalAlpha=a;ctx.fillStyle='#ffd21a';ctx.beginPath();ctx.arc(t.x,t.y,4,0,Math.PI*2);ctx.fill();
+   }
+   ctx.globalAlpha=1;ctx.translate(b.x,b.y);ctx.rotate(Math.atan2(b.vy,b.vx));
+   ctx.shadowBlur=20;ctx.shadowColor='#ff5a00';ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(0,0,6,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle='#ff8a00';ctx.fillRect(-2,-5,18,10);
+   ctx.fillStyle='#d62800';ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(8,-6);ctx.lineTo(8,6);ctx.closePath();ctx.fill();
+   ctx.restore();
+ }
+ for(const sh of arenaShields){
+   if(sh.activeFor||sh.broken)continue;
+   ctx.save();ctx.translate(sh.x,sh.y);
+   ctx.shadowBlur=16;ctx.shadowColor='#20f6ff';
+   ctx.fillStyle='rgba(25,220,255,.10)';ctx.strokeStyle='#20f6ff';ctx.lineWidth=4;ctx.shadowBlur=10;ctx.shadowColor='#20f6ff';
+   const sw=sh.shieldW||sh.size*1.18, shh=sh.shieldH||sh.size*.72;
+   ctx.fillRect(-sw/2,-shh/2,sw,shh);
+   ctx.strokeRect(-sw/2,-shh/2,sw,shh);ctx.shadowBlur=0;
+   ctx.fillStyle='#dffcff';ctx.font='bold 19px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🛡️',0,1);
+   ctx.restore();
+ }
+ // Draw an active shield around the flag that touched the shield power-up.
+ for(const f of flags){
+   if(f.dead||!f.shieldPower)continue;
+   ctx.save();ctx.translate(f.x,f.y);ctx.shadowBlur=18;ctx.shadowColor='#20f6ff';
+   ctx.strokeStyle='#20f6ff';ctx.lineWidth=10;ctx.shadowBlur=16;ctx.shadowColor='#20f6ff';
+   const sw=f.size*1.18, shh=f.size*.72;
+   ctx.beginPath();ctx.rect(-sw/2,-shh/2,sw,shh);ctx.stroke();ctx.shadowBlur=0;
+   ctx.restore();
+ }
+ // Draw the launcher gun attached to the flag that picked it up.
+ for(const f of flags){
+   if(f.dead||!f.gunPower)continue;
+   const g=f.gunPower;
+   ctx.save();
+   // Rocket launcher is active and mounted directly above the carrier flag.
+   ctx.translate(f.x, f.y - f.size*.82);
+   // Rotate the launcher barrel toward the nearest live enemy flag.
+   let aimTarget=null, aimBest=Infinity;
+   for(const ef of flags){
+     if(ef.dead || ef===f) continue;
+     const dd=Math.hypot(ef.x-f.x, ef.y-f.y);
+     if(dd<aimBest){aimBest=dd;aimTarget=ef;}
+   }
+   const aimAngle=aimTarget ? Math.atan2(aimTarget.y-f.y, aimTarget.x-f.x) : -Math.PI/2;
+   ctx.rotate(aimAngle);
+   ctx.shadowBlur=18;ctx.shadowColor='#ffb300';
+   // Long rocket-launcher body.
+   ctx.fillStyle='#8a8f98';ctx.strokeStyle='#252a30';ctx.lineWidth=3;
+   ctx.fillRect(-f.size*1.05,-8,f.size*2.10,16);
+   ctx.fillStyle='#59616b';ctx.fillRect(-f.size*.82,-15,f.size*1.25,8);
+   // Large launcher barrel/nozzle.
+   ctx.fillStyle='#30363d';ctx.fillRect(f.size*.82,-13,f.size*.58,26);
+   ctx.fillStyle='#15191d';ctx.fillRect(f.size*1.34,-10,f.size*.20,20);
+   // Rear grip/support attached to the flag top.
+   ctx.fillStyle='#d19a16';ctx.fillRect(-9,7,18,16);
+   ctx.fillStyle='#ffd21a';ctx.fillRect(-f.size*.62,-5,f.size*.62,5);
+   // Small status light showing the launcher is active.
+   ctx.fillStyle='#7cff7c';ctx.beginPath();ctx.arc(-f.size*.55,-18,5,0,Math.PI*2);ctx.fill();
+   ctx.restore();
+ }
+ // two fans, same horizontal line, centered and separated
+ // Two bladed fans fixed on the left and right of the circle center
+ const fy=cy, sep=Math.min(180,R*.40);
+ fan(cx-sep,fy,fanRotation); fan(cx+sep,fy,-fanRotation);
+ // Show the round label in the exact center for the first 5 seconds only.
+ if(preRoundPhase && preRoundTime < 5){
+   ctx.save();
+   ctx.textAlign='center'; ctx.textBaseline='middle';
+   const baseSize=Math.max(42,Math.min(100,W*.14));
+   // Big round-transition pulse: start smaller, grow past 100%, then settle.
+   const pulseT=Math.min(1,preRoundTime/1.25);
+   const pulse=Math.sin(pulseT*Math.PI);
+   const scale=0.72 + pulse*0.58;
+   ctx.translate(cx,cy); ctx.scale(scale,scale);
+   ctx.font=`900 ${baseSize}px Arial`;
+   ctx.fillStyle='#ffe600'; ctx.strokeStyle='#0b2740'; ctx.lineWidth=7;
+   ctx.shadowBlur=18 + pulse*14; ctx.shadowColor='#ffe600';
+   ctx.strokeText('ROUND • '+activeRound,0,0);
+   ctx.fillText('ROUND • '+activeRound,0,0);
+   ctx.restore();
+ }
+ // Eliminated flags drop just below the arena, one-by-one, and settle into a line.
+ for(let i=0;i<eliminated.length;i++){
+   const f=eliminated[i];
+   // Keep every eliminated flag on the same baseline and at the same settled size.
+   // Their in-arena size can change from round/flag-count rules, but the bottom
+   // row should never inherit those different sizes.
+   const settledSize=45*(settings.flagSize||1);
+   const settledHeight=settledSize*.72;
+   const targetY=H-Math.max(6,settledHeight/2+4);
+   const settledWidth=settledSize*1.18;
+   // Keep a comfortable fixed gap between eliminated flags. When one row is
+   // full, continue on a new row above it instead of squeezing every flag
+   // into the same bottom line.
+   const colGap=Math.max(6,Math.min(14,W*.012));
+   const cellW=settledWidth+colGap;
+   const maxCols=Math.max(1,Math.floor((W-20)/cellW));
+   const row=Math.floor(i/maxCols);
+   const col=i%maxCols;
+   const colsInRow=Math.min(maxCols,eliminated.length-row*maxCols);
+   const rowWidth=colsInRow*cellW-colGap;
+   const targetX=cx-rowWidth/2+settledWidth/2+col*cellW;
+   const rowGap=Math.max(settledSize*.92,40);
+   const rowTargetY=targetY-row*rowGap;
+   const t=Math.min(1,f.elimT||0);
+   const ease=1-Math.pow(1-t,3);
+   const driftEase=Math.min(1,Math.max(0,(t-.78)/.22));
+   let ex=f.elimStartX+(targetX-f.elimStartX)*driftEase;
+   let ey=f.elimStartY+(rowTargetY-f.elimStartY)*ease;
+   let rot=(1-t)*((i%2?1:-1)*0.12), scale=settledSize/Math.max(1,f.size||settledSize), alpha=.35+.65*t;
+   switch(settings.elim){
+    case 2: alpha=1-t; break; case 3: scale=.25+t*.75; break; case 4: ey-=Math.sin(t*Math.PI)*80; break;
+    case 5: rot+=(1-t)*Math.PI*2; break; case 6: scale=1-t*.75; break; case 7: scale=.35+t*.65; break;
+    case 8: rot+=(1-t)*Math.PI; break; case 9: ex+=Math.sin(t*35)*10*(1-t); break; case 10: ey-=t*180; break;
+    case 11: ey-=Math.sin(t*Math.PI)*120; alpha=.2+.8*t; break; case 12: scale=1-t; break;
+    case 13: scale=1+Math.sin(t*Math.PI)*1.2; alpha=1-t; break; case 14: alpha=(Math.floor(t*10)%2)?0.25:1; break;
+    case 15: rot+=t*Math.PI*3; break; case 16: ex+=Math.sin(t*Math.PI)*100; break; case 17: scale=1+Math.sin(t*Math.PI)*.45; break;
+    case 18: ex+=Math.sin(t*60)*8; alpha=.35+.65*t; break; case 19: ey-=t*t*220; rot+=t*2; break;
+    case 20: alpha=.2+.8*Math.sin(t*Math.PI/2); scale=1-t*.5; break; case 21: { const r=Math.random(); if(r<.25) {alpha=.35;} } break;
+   }
+   ctx.save();ctx.translate(ex,ey);ctx.rotate(rot);ctx.scale(scale,scale);
+   ctx.globalAlpha=alpha;
+   // Only live-comment flags show @username.
+   if(f.live && f.name){
+    ctx.font=`bold ${Math.max(8,f.size*.34)}px Arial`;ctx.textAlign='center';ctx.textBaseline='bottom';
+    ctx.fillStyle='#fff';ctx.strokeStyle='#07131d';ctx.lineWidth=3;ctx.strokeText(f.name,0,-f.size*.48);ctx.fillText(f.name,0,-f.size*.48);
+   }
+   drawCountryFlag(f.flag, f.size, f.big);
+   ctx.restore();
+ }
+ for(const f of flags){
+   if(f.dead)continue;
+   ctx.save();ctx.translate(f.x,f.y);
+   // Only live-comment flags show @username.
+   if(f.live && f.name){
+    ctx.font=`bold ${Math.max(8,f.size*.38)}px Arial`;ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillStyle=f.big?'#fff72d':'#fff';ctx.strokeStyle='#07131d';ctx.lineWidth=3;ctx.strokeText(f.name,0,-f.size*.52);ctx.fillText(f.name,0,-f.size*.52);
+   }
+   drawCountryFlag(f.flag, f.size, f.big);
+   ctx.restore();
+ }
+}
+function collide(a,b){
+ const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),min=a.r+b.r;
+ if(d&&d<min){const nx=dx/d,ny=dy/d;const p=2*(a.vx*nx+a.vy*ny-b.vx*nx-b.vy*ny)/(2);a.vx-=p*nx;a.vy-=p*ny;b.vx+=p*nx;b.vy+=p*ny;const push=(min-d)/2;a.x-=nx*push;a.y-=ny*push;b.x+=nx*push;b.y+=ny*push}}
+function update(dt){
+  refreshCircleFlagSizes();
+ rotation+=dt*settings.circleSpeed; fanRotation+=dt*3.06;
+ updatePowerups(dt);
+ updateLauncherGuns(dt);
+ if(preRoundPhase){
+   preRoundTime+=dt;
+   if(preRoundTime < 5){
+     ringGap=0;
+   }else{
+     const openT=Math.min(1,(preRoundTime-5)/1.0);
+     gapOpen=openT;
+     ringGap=settings.gap*openT;
+     if(openT>=1) preRoundPhase=false;
+   }
+ }else{
+   ringGap=settings.gap;
+ }
+ for(const f of flags){
+  f.x+=f.vx*dt*settings.flagSpeed;f.y+=f.vy*dt*settings.flagSpeed;const bd=Math.hypot(f.x-cx,f.y-cy);
+  const dx0=f.x-cx,dy0=f.y-cy,d0=Math.hypot(dx0,dy0)||1;
+  const outward=(f.vx*dx0+f.vy*dy0)>0;
+  // A protected flag cannot leave through the gap: its shield breaks and it is returned inside.
+  if(f.shieldPower && !preRoundPhase && gapOpen>=1 && bd+f.r>=R && flagInGap(f.x,f.y) && outward){breakAttachedShield(f);continue;}
+  // Eliminate only when the flag is moving outward through the gap.
+  if(!preRoundPhase && gapOpen>=1 && bd+f.r>=R && flagInGap(f.x,f.y) && outward && !f.shieldPower){f.dead=true;eliminateFlag(f);continue;}
+  if(!f.shieldPower) f.shield=Math.max(0,f.shield-dt);
+  const dx=f.x-cx,dy=f.y-cy,d=Math.hypot(dx,dy),max=R-f.r-3;
+  if(d>max){
+   const nx=dx/d,ny=dy/d;
+   // rotating gap: flags can escape through the gap
+   let a=Math.atan2(dy,dx)-rotation; a=Math.atan2(Math.sin(a),Math.cos(a));
+   if(!preRoundPhase && gapOpen>=1 && Math.abs(a)<ringGap/2 && (f.vx*nx+f.vy*ny)>0 && !f.shieldPower){f.dead=true;eliminateFlag(f);continue}
+   if(f.shieldPower && !preRoundPhase && gapOpen>=1 && Math.abs(a)<ringGap/2 && (f.vx*nx+f.vy*ny)>0){breakAttachedShield(f);continue;}
+   f.x=cx+nx*max;f.y=cy+ny*max;
+   const dot=f.vx*nx+f.vy*ny;f.vx-=2*dot*nx;f.vy-=2*dot*ny;
+  }
+ }
+ for(let i=0;i<flags.length;i++)for(let j=i+1;j<flags.length;j++)if(!flags[i].dead&&!flags[j].dead)collide(flags[i],flags[j]);
+ // robust rotating-fan collision: flags are pushed clear of the blade,
+ // then reflected using the blade's own tangential velocity so they cannot stick.
+ const fy=cy,sep=Math.min(180,R*.40);
+ const bladeLen=Math.min(108,Math.max(68,R*.22));
+ const bladeWidth=Math.max(13,Math.min(20,R*.038));
+ const hubRadius=12;
+ function pointSeg(px,py,ax,ay,bx,by){
+   const abx=bx-ax,aby=by-ay,den=abx*abx+aby*aby||1;
+   const t=Math.max(0,Math.min(1,((px-ax)*abx+(py-ay)*aby)/den));
+   const qx=ax+t*abx,qy=ay+t*aby;
+   return [px-qx,py-qy,t,qx,qy];
+ }
+ for(const f of flags){
+   if(f.dead)continue;
+   f.fanHit=Math.max(0,(f.fanHit||0)-dt);
+   for(const fx of [cx-sep,cx+sep]){
+     if(f.fanHit>0) continue;
+     const localX=f.x-fx, localY=f.y-fy;
+     const fanAng=(fx<cx?fanRotation:-fanRotation);
+     const ca=Math.cos(-fanAng),sa=Math.sin(-fanAng);
+     const lx=localX*ca-localY*sa, ly=localX*sa+localY*ca;
+
+     let hit=false,best=Infinity,nxL=0,nyL=0,hitX=0,hitY=0;
+     for(let k=0;k<3;k++){
+       const a=k*Math.PI*2/3;
+       const ax=Math.cos(a)*hubRadius,ay=Math.sin(a)*hubRadius;
+       const bx=Math.cos(a)*(hubRadius+bladeLen),by=Math.sin(a)*(hubRadius+bladeLen);
+       const q=pointSeg(lx,ly,ax,ay,bx,by);
+       const dist=Math.hypot(q[0],q[1]);
+       if(dist < f.r+bladeWidth*.62 && dist<best){
+         best=dist;hit=true;hitX=q[3];hitY=q[4];
+         // Normal from blade centerline toward the flag.
+         if(dist>0.001){nxL=q[0]/dist;nyL=q[1]/dist;}
+         else {nxL=-Math.sin(a);nyL=Math.cos(a);}
+       }
+     }
+
+     const hd=Math.hypot(lx,ly);
+     if(hd < f.r+hubRadius && hd<best){
+       hit=true;best=hd;hitX=0;hitY=0;
+       nxL=lx/(hd||1);nyL=ly/(hd||1);
+     }
+
+     if(hit){
+       // Convert local normal/contact point to world coordinates.
+       const c=Math.cos(fanAng),si=Math.sin(fanAng);
+       const nx=nxL*c-nyL*si, ny=nxL*si+nyL*c;
+       const wx=hitX*c-hitY*si, wy=hitX*si+hitY*c;
+
+       // Move the flag completely outside the blade before reflecting it.
+       const push=f.r+bladeWidth*.70-best+3;
+       f.x+=nx*Math.max(push,4);
+       f.y+=ny*Math.max(push,4);
+
+       // Stable bounce: use the blade's movement only as a small influence.
+       // This prevents flags from getting an excessive upward kick or sticking.
+       const omega=(fx<cx?fanRotation>=0?3.06:-3.06:-3.06);
+       const rx=wx, ry=wy;
+       const svx=-omega*ry*0.35, svy=omega*rx*0.35;
+
+       let rvx=f.vx-svx, rvy=f.vy-svy;
+       const vn=rvx*nx+rvy*ny;
+       if(vn<0){
+         const restitution=0.88;
+         rvx-=(1+restitution)*vn*nx;
+         rvy-=(1+restitution)*vn*ny;
+       }
+       // Keep the bounce controlled; never inject a large vertical impulse.
+       const speed=Math.hypot(rvx,rvy);
+       const maxSpeed=1250;
+       if(speed>maxSpeed){rvx*=maxSpeed/speed;rvy*=maxSpeed/speed;}
+       f.vx=rvx+svx;
+       f.vy=rvy+svy;
+       f.fanHit=0.08;
+        playFBXSFX('bounce');
+       break;
+     }
+   }
+ }
+ for(const f of eliminated) f.elimT=Math.min(1,(f.elimT||0)+dt/1.15);
+ if(spawnedTotal>=spawnLimit && flags.filter(f=>!f.dead).length<=1){finishRound()}
+}
+function countryDisplayName(handle){
+ const map={
+  '@japan_655':'Japan','@italy_270':'Italy','@canada_848':'Canada','@germany_909':'Germany','@netherlands_884':'Netherlands','@poland_350':'Poland','@france_447':'France','@brazil_46':'Brazil','@korea_188':'South Korea','@sweden_795':'Sweden','@norway_649':'Norway','@usa_452':'United States','@mexico_730':'Mexico','@turkey_708':'Turkey','@australia_609':'Australia','@uk_347':'United Kingdom','@spain_302':'Spain','@india_666':'India'
+ };
+ return map[handle]||handle.replace(/^@/,'');
+}
+function winnerCountryName(flag, handle){
+ const c=liveFlagEmojiMap[flag];
+ return c?.name||countryDisplayName(handle);
+}
+function flagClass(flag){
+ const m={'🇯🇵':'jp','🇮🇹':'it','🇨🇦':'ca','🇩🇪':'de','🇳🇱':'nl','🇵🇱':'pl','🇫🇷':'fr','🇧🇷':'br','🇰🇷':'kr','🇸🇪':'se','🇳🇴':'no','🇺🇸':'us','🇲🇽':'mx','🇹🇷':'tr','🇦🇺':'au','🇬🇧':'gb','🇪🇸':'es','🇮🇳':'in','🇧🇩':'bd'}; return m[flag]||'';
+}
+function flagMarkup(flag,scale=1){
+ const code=(liveCountryMap[flag]||'').toLowerCase();
+ if(code){
+   return `<img src="https://flagcdn.com/w80/${code}.png" style="width:${Math.round(58*scale)}px;height:auto;vertical-align:middle;border:1px solid rgba(255,255,255,.6);border-radius:3px">`;
+ }
+ return `<span class="emojiFlagFallback" style="font-size:${Math.round(58*scale)}px;line-height:1">${flag||'🏳️'}</span>`;
+}
+function setWinnerFlag(el,flag){ el.innerHTML=flagMarkup(flag,0.9); el.setAttribute('aria-label',winnerCountryName(flag,'')+' flag'); }
+function finishRound(){
+ if(!running)return;running=false;const left=flags.find(f=>!f.dead);
+ if(left){
+   playFBXSFX('winner');
+   for(let i=5;i>1;i--){
+     document.getElementById('w'+i).textContent=document.getElementById('w'+(i-1)).textContent;
+     document.getElementById('wf'+i).innerHTML=document.getElementById('wf'+(i-1)).innerHTML;
+   }
+   setWinnerFlag(document.getElementById('wf1'), left.flag);
+   document.getElementById('w1').textContent=winnerCountryName(left.flag,left.name);
+
+   const ov=document.getElementById('winnerOverlay');
+   const wf=document.getElementById('winnerFlagBig'); wf.innerHTML=flagMarkup(left.flag,4);
+   const wn=winnerCountryName(left.flag,left.name);document.getElementById('winnerCountry').textContent=wn;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance('Round Winner '+wn);u.lang='en-US';const vs=speechSynthesis.getVoices();const fv=vs.find(v=>/Female|Samantha|Zira|Jenny|Aria|Google US English/i.test(v.name))||vs.find(v=>v.lang.startsWith('en'));if(fv)u.voice=fv;speechSynthesis.speak(u);}catch(e){}
+   ov.classList.add('show');
+ }
+
+ setTimeout(()=>{
+   const ov=document.getElementById('winnerOverlay');
+   if(ov) ov.classList.remove('show');
+   spawn(30);
+   running=true;
+   last=0;
+   preRoundTime=0;
+   preRoundPhase=true;
+   gapOpen=0;
+   ringGap=0;
+   activeRound=round++;
+   document.getElementById('startScreen').classList.add('hidden');
+   document.getElementById('round').textContent='ROUND '+activeRound;
+ },5000);
+}
+function loop(t){if(!last)last=t;const dt=Math.min(.035,(t-last)/1000);last=t;if(running)update(dt);draw();requestAnimationFrame(loop)}
+document.getElementById('start').onclick=()=>startNewRound();
+
+const controls=document.getElementById('controls');
+const $=id=>document.getElementById(id);
+const DEFAULT_SETTINGS={gap:.30,circleSpeed:.16,flagSpeed:1,flagSize:1,fanSize:1,flagCount:50,white:'#e8faff',fanColor:'#375c65',elim:1,style:1,theme:'original',soundMaster:100,soundBounce:100,soundBomb:100,soundGun:100,soundWinner:100,soundEliminated:100};
+function setSettingsUI(){
+  $('gapRange').value=settings.gap;$('circleSpeedRange').value=settings.circleSpeed;$('flagSpeedRange').value=Math.round(settings.flagSpeed*100);$('flagSizeRange').value=Math.round(settings.flagSize*100);$('fanSizeRange').value=Math.round(settings.fanSize*100);$('flagCountRange').value=settings.flagCount;$('whiteColor').value=settings.white;$('fanColor').value=settings.fanColor;$('elimSelect').value=settings.elim;$('styleSelect').value=settings.style;$('themeSelect').value=settings.theme;
+  $('soundMasterRange').value=settings.soundMaster;$('soundBounceRange').value=settings.soundBounce;$('soundBombRange').value=settings.soundBomb;$('soundGunRange').value=settings.soundGun;$('soundWinnerRange').value=settings.soundWinner;$('soundEliminatedRange').value=settings.soundEliminated;
+  $('gapVal').textContent=Number(settings.gap).toFixed(2);$('circleSpeedVal').textContent=Number(settings.circleSpeed).toFixed(2);$('flagSpeedVal').textContent=Math.round(settings.flagSpeed*100)+'%';$('flagSizeVal').textContent=Math.round(settings.flagSize*100)+'%';$('fanSizeVal').textContent=Math.round(settings.fanSize*100)+'%';$('flagCountVal').textContent=settings.flagCount;$('elimVal').textContent=settings.elim;$('styleVal').textContent=settings.style;$('themeVal').textContent=$('themeSelect').options[$('themeSelect').selectedIndex].text.replace(/^\d+\.\s*/,'');
+  $('soundMasterVal').textContent=settings.soundMaster+'%';$('soundBounceVal').textContent=settings.soundBounce+'%';$('soundBombVal').textContent=settings.soundBomb+'%';$('soundGunVal').textContent=settings.soundGun+'%';$('soundWinnerVal').textContent=settings.soundWinner+'%';$('soundEliminatedVal').textContent=settings.soundEliminated+'%';
+  document.body.dataset.theme=settings.theme;
+  window.flagBattleSoundSettings={master:settings.soundMaster,bounce:settings.soundBounce,bomb:settings.soundBomb,gun:settings.soundGun,winner:settings.soundWinner,eliminated:settings.soundEliminated};
+  if(window.applyFBXSoundSettings) window.applyFBXSoundSettings();
+}
+function saveSettings(){try{localStorage.setItem('flagGunBattleSettings',JSON.stringify(settings));return true}catch(e){return false}}
+function loadSavedSettings(){try{const raw=localStorage.getItem('flagGunBattleSettings');if(!raw)return;const saved=JSON.parse(raw);settings={...DEFAULT_SETTINGS,...saved};setSettingsUI();spawnLimit=settings.flagCount;activeLimit=Math.min(30,settings.flagCount)}catch(e){settings={...DEFAULT_SETTINGS};setSettingsUI()}}
+$('settingsBtn').onclick=()=>controls.classList.add('open');
+$('startSettingsBtn').onclick=()=>controls.classList.add('open');
+$('closeControls').onclick=()=>controls.classList.remove('open');
+$('gapRange').oninput=e=>{settings.gap=+e.target.value;$('gapVal').textContent=settings.gap.toFixed(2)};
+$('circleSpeedRange').oninput=e=>{settings.circleSpeed=+e.target.value;$('circleSpeedVal').textContent=settings.circleSpeed.toFixed(2)};
+$('flagSpeedRange').oninput=e=>{settings.flagSpeed=+e.target.value/100;$('flagSpeedVal').textContent=e.target.value+'%'};
+$('flagSizeRange').oninput=e=>{settings.flagSize=+e.target.value/100;$('flagSizeVal').textContent=e.target.value+'%'};
+$('fanSizeRange').oninput=e=>{settings.fanSize=+e.target.value/100;$('fanSizeVal').textContent=e.target.value+'%';draw()};
+$('flagCountRange').oninput=e=>{$('flagCountVal').textContent=e.target.value};
+[
+  ['soundMasterRange','soundMasterVal','soundMaster','master'],
+  ['soundBounceRange','soundBounceVal','soundBounce','bounce'],
+  ['soundBombRange','soundBombVal','soundBomb','bomb'],
+  ['soundGunRange','soundGunVal','soundGun','gun'],
+  ['soundWinnerRange','soundWinnerVal','soundWinner','winner'],
+  ['soundEliminatedRange','soundEliminatedVal','soundEliminated','eliminated']
+].forEach(([rid,vid,key,audioKey])=>{
+  $(rid).oninput=e=>{
+    const v=Math.max(0,Math.min(200,+e.target.value));
+    settings[key]=v;
+    $(vid).textContent=v+'%';
+    window.flagBattleSoundSettings=window.flagBattleSoundSettings||{};
+    window.flagBattleSoundSettings[audioKey]=v;
+    if(window.setFBXSoundVolume) window.setFBXSoundVolume(audioKey,v);
+    saveSettings();
+  };
+});
+$('applyFlagCount').onclick=()=>{settings.flagCount=+$('flagCountRange').value;spawnLimit=settings.flagCount;activeLimit=Math.min(30,settings.flagCount);startNewRound()};
+$('liveTestBtn').onclick=()=>window.receiveLiveComment({username:$('liveTestUser').value,text:$('liveTestText').value});
+$('ytConnectBtn').onclick=ytConnect;for(let i=1;i<=5;i++){
+  const k=$('ytApiKey'+i);
+  if(k) k.addEventListener('input',()=>{
+    const keys=Array.from({length:5},(_,j)=>$('ytApiKey'+(j+1))?.value||'');
+    try{localStorage.setItem('fbx_yt_pool',JSON.stringify(keys));}catch(e){}
+    const before=ytChat.apiKeys.slice();
+    ytChat.apiKeys=keys.map(x=>String(x||'').trim());
+    for(let j=0;j<5;j++){
+      if(ytChat.apiKeys[j]!==before[j]){ ytChat.quota.delete(j); ytChat.networkFailed.delete(j); }
+    }
+    if(!ytChat.apiKeys[ytChat.apiIndex]){ const next=ytFirstConfigured(0); if(next>=0) ytChat.apiIndex=next; }
+    ytRenderPool();
+    if(ytChat.waitingForApi && ytChat.liveChatId && ytChat.apiKeys.some(Boolean)){
+      const next=ytFirstConfigured(ytChat.apiIndex);
+      if(next>=0){
+        ytChat.apiIndex=next; ytChat.waitingForApi=false; ytChat.connected=true;
+        ytSetStatus('CONNECTED — NEW API ADDED',true);
+        if(!ytChat.timer) ytChat.timer=setTimeout(ytPoll,0);
+      }
+    }
+  });
+}
+try{
+  const saved=JSON.parse(localStorage.getItem('fbx_yt_pool')||'[]');
+  if(Array.isArray(saved)) for(let i=0;i<5;i++){const k=$('ytApiKey'+(i+1)); if(k) k.value=saved[i]||'';}
+}catch(e){}
+try{const savedComments=localStorage.getItem('fbx_yt_comments_enabled'); if(savedComments!==null) ytChat.commentsEnabled=savedComments!=='false';}catch(e){}
+ytRenderPool();
+
+$('ytDisconnectBtn').onclick=()=>{ytStop();const h=$('ytHint');if(h)h.textContent='YouTube connector disconnected.';};
+$('ytStatus').title='YouTube Live Chat status';
+$('whiteColor').oninput=e=>{settings.white=e.target.value;draw()};
+$('fanColor').oninput=e=>{settings.fanColor=e.target.value;draw()};
+$('elimSelect').onchange=e=>{settings.elim=+e.target.value;$('elimVal').textContent=e.target.value};
+$('styleSelect').onchange=e=>{settings.style=+e.target.value;$('styleVal').textContent=e.target.value};
+$('themeSelect').onchange=e=>{settings.theme=e.target.value;$('themeVal').textContent=e.target.options[e.target.selectedIndex].text;document.body.dataset.theme=e.target.value};
+function startNewRound(){
+  spawn(Math.min(30,settings.flagCount)); running=true; last=0; preRoundTime=0; preRoundPhase=true; gapOpen=0; ringGap=0; activeRound=round++;
+  $('startScreen').classList.add('hidden'); controls.classList.remove('open');
+}
+$('newRound').onclick=startNewRound;
+$('saveSettings').onclick=()=>{saveSettings();controls.classList.remove('open');};
+$('resetDefault').onclick=()=>{
+ settings={...DEFAULT_SETTINGS};
+ setSettingsUI();spawnLimit=50;activeLimit=30;
+ try{localStorage.removeItem('flagGunBattleSettings')}catch(e){}
+};
+loadSavedSettings();
+
+requestAnimationFrame(loop);
+</script>
+
+<style>
+#winnerOverlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:50;background:rgba(0,40,20,.88);pointer-events:none}
+#winnerLiveInstruction{
+ position:absolute;top:6.5%;left:50%;width:92%;max-width:820px;box-sizing:border-box;
+ transform:translateX(-50%) scale(1);transform-origin:center center;
+ text-align:center;font-size:38px;line-height:1.12;font-weight:1000;color:#ffe92e;
+ text-shadow:0 0 8px #ffe92e,0 0 18px #ffb000,0 2px 4px #000;
+ z-index:60;white-space:normal;padding:10px 18px 12px;
+ border:2px solid #ffe92e;border-radius:16px;
+ background:linear-gradient(180deg,rgba(4,31,45,.92),rgba(5,24,40,.78));
+ box-shadow:0 0 8px #ffe92e,0 0 20px #ffb00099,inset 0 0 14px #ffe92e22;
+ animation:liveInstructionZoom 1.45s ease-in-out infinite;
+}
+#winnerLiveInstruction::before{
+ content:"";position:absolute;inset:-5px;border:1px solid #25f3e9;border-radius:19px;
+ box-shadow:0 0 10px #25f3e9,0 0 20px #25f3e966;pointer-events:none;
+ animation:liveInstructionBorder 1.45s ease-in-out infinite;
+}
+#winnerLiveInstruction .lcLine{display:block;}
+#winnerLiveInstruction .lcLabel{color:#25f3e9;}
+@keyframes liveInstructionZoom{
+ 0%,100%{transform:translateX(-50%) scale(1)}
+ 50%{transform:translateX(-50%) scale(1.10)}
+}
+@keyframes liveInstructionBorder{
+ 0%,100%{opacity:.55;transform:scale(1)}
+ 50%{opacity:1;transform:scale(1.025)}
+}
+@media(max-width:700px){#winnerLiveInstruction{top:6%;width:94%;max-width:none;font-size:28px;line-height:1.16;padding:9px 10px 11px;border-radius:14px;}}
+#winnerOverlay.show{display:flex}
+#winnerCard{text-align:center;background:rgba(5,24,40,.95);border:3px solid #f3d23c;border-radius:20px;padding:20px 30px}
+#winnerTitle{font-size:42px;font-weight:900;color:#ffe92e}
+#winnerFlagBig{font-size:180px;margin:10px 0}
+#winnerCountry{font-size:32px;font-weight:700}
+
+@keyframes winnerPulse{
+0%{transform:scale(1)}
+50%{transform:scale(1.12)}
+100%{transform:scale(1)}
+}
+#winnerCard{animation:winnerPulse 1.2s infinite}
+#winnerTitle{text-shadow:0 0 20px #ffd700}
+#winnerFlagBig{text-shadow:0 0 25px #fff}
+.emojiFlagFallback{display:inline-block;font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif;text-shadow:0 2px 8px #0008}
+</style>
+<div id="winnerOverlay"><div id="winnerLiveInstruction"><span class="lcLine"><span class="lcLabel">💬 LIVE COMMENTS:</span> Country comment →</span><span class="lcLine">@User + Flag spawn</span></div><div id="winnerCard"><div id="winnerTitle">ROUND WINNER</div><div id="winnerFlagBig"></div><div id="winnerCountry"></div></div></div>
+
+
+<script>
+function speakWinner(name){
+ const u=new SpeechSynthesisUtterance("Round Winner "+name);
+ const v=speechSynthesis.getVoices().find(v=>/female|zira|samantha|google us english/i.test(v.name))||speechSynthesis.getVoices()[0];
+ if(v)u.voice=v; speechSynthesis.cancel(); speechSynthesis.speak(u);
+}
+</script>
+<script>
+// PC external control panel bridge. Keeps the existing in-game menu unchanged.
+window.addEventListener('message', (ev) => {
+  const d = ev && ev.data;
+  if (!d || d.type !== 'FLAG_BATTLE_CONTROL') return;
+  const el = id => document.getElementById(id);
+  const setAndFire = (id, value) => {
+    const x = el(id); if (!x) return false;
+    x.value = value; x.dispatchEvent(new Event('input',{bubbles:true})); x.dispatchEvent(new Event('change',{bubbles:true})); return true;
+  };
+  try {
+    if (d.action === 'set' && d.id) setAndFire(d.id, d.value);
+    else if (d.action === 'click' && d.id) el(d.id)?.click();
+    else if (d.action === 'youtubeDisconnect') {
+      ytStop();
+      const hint=document.getElementById('ytHint'); if(hint) hint.textContent='YouTube Live connector disconnected from Control Panel.';
+      syncYTState({apiKeys:ytChat.apiKeys,videoId:ytChat.videoId,connected:false,currentApi:ytChat.apiIndex+1,quota:[...ytChat.quota],networkFailed:[...ytChat.networkFailed],commentsEnabled:ytChat.commentsEnabled,reason:'manualDisconnect'});
+    }
+    else if (d.action === 'youtube') {
+      const v=el('ytVideoId');
+      const keys=Array.isArray(d.apiKeys)?d.apiKeys:(d.apiKey?[d.apiKey]:[]);
+      for(let i=0;i<5;i++){const k=el('ytApiKey'+(i+1)); if(k) k.value=keys[i]||'';}
+      if(v) v.value=d.videoId||'';
+      el('ytConnectBtn')?.click();
+    }
+    else if (d.action === 'youtubePoolUpdate') {
+      const keys=Array.isArray(d.apiKeys)?d.apiKeys:[];
+      const before=ytChat.apiKeys.slice();
+      for(let i=0;i<5;i++){const k=el('ytApiKey'+(i+1)); if(k) k.value=keys[i]||'';}
+      if(d.videoId!==undefined){const v=el('ytVideoId'); if(v) v.value=d.videoId||'';}
+      ytChat.apiKeys=Array.from({length:5},(_,i)=>String(keys[i]||'').trim());
+      for(let i=0;i<5;i++){
+        if(before[i]!==ytChat.apiKeys[i]){ ytChat.quota.delete(i); ytChat.networkFailed.delete(i); }
+      }
+      if(!ytChat.apiKeys[ytChat.apiIndex]){ const first=ytFirstConfigured(0); if(first>=0) ytChat.apiIndex=first; }
+      ytRenderPool();
+      if(ytChat.waitingForApi && ytChat.liveChatId && ytChat.apiKeys.some(Boolean)){
+        const next=ytChat.apiKeys.findIndex((k,i)=>k && !ytChat.quota.has(i) && !ytChat.networkFailed.has(i));
+        if(next>=0){
+          ytChat.apiIndex=next; ytChat.waitingForApi=false; ytChat.connected=true;
+          ytSetStatus('CONNECTED — NEW API ADDED',true);
+          const hint=document.getElementById('ytHint'); if(hint)hint.textContent='New API added — continuing without reconnecting.';
+          syncYTState({apiKeys:ytChat.apiKeys,videoId:ytChat.videoId,connected:true,currentApi:ytChat.apiIndex+1,quota:[...ytChat.quota],networkFailed:[...ytChat.networkFailed],reason:'apiAdded'});
+          if(!ytChat.timer) ytChat.timer=setTimeout(ytPoll,0);
+        }
+      }
+    }
+    else if (d.action === 'youtubeComments') {
+      ytSetCommentsEnabled(d.enabled !== false);
+    }
+    else if (d.action === 'ping') ev.source?.postMessage({type:'FLAG_BATTLE_READY'}, '*');
+  } catch(e) { console.warn('External control error', e); }
+});
+
+/* CAPTURE FIX: keep the document considered active without changing game physics.
+   No gameplay/render-loop replacement is performed here. */
+(function flagBattleCaptureKeepAlive(){
+  try {
+    let keepAliveTimer = null;
+    const ping = () => { try { window.dispatchEvent(new Event('flagBattleCapturePing')); } catch(e){} };
+    const start = () => {
+      if (keepAliveTimer == null) keepAliveTimer = setInterval(ping, 1000);
+    };
+    const stop = () => {
+      if (keepAliveTimer != null) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
+    };
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') start();
+      else start(); // capture window may be occluded while document remains visible
+    }, {passive:true});
+    start();
+  } catch(e) {}
+})();
+
+</script>
+
+<script>
+function syncYTState(state){
+ localStorage.setItem('fbx_yt_sync', JSON.stringify(state));
+ try{
+   if(window.flagBattleRemote && window.flagBattleRemote.send){
+     window.flagBattleRemote.send({type:'FLAG_BATTLE_YT_STATE', state});
+   }
+ }catch(e){}
+}
+window.addEventListener('storage', function(e){
+ if(e.key==='fbx_yt_sync'){
+   try{
+    const d=JSON.parse(e.newValue||'{}');
+    const v=document.getElementById('ytVideoId');
+    if(Array.isArray(d.apiKeys)) for(let i=0;i<5;i++){const k=document.getElementById('ytApiKey'+(i+1)); if(k) k.value=d.apiKeys[i]||'';}
+    else if(d.apiKey!==undefined){const k=document.getElementById('ytApiKey1'); if(k) k.value=d.apiKey||'';}
+    if(v && d.videoId!==undefined) v.value=d.videoId||'';
+    if(d.currentApi) ytChat.apiIndex=Math.max(0,Math.min(4,Number(d.currentApi)-1));
+    if(Array.isArray(d.quota)) ytChat.quota=new Set(d.quota.map(Number));
+    if(Array.isArray(d.networkFailed)) ytChat.networkFailed=new Set(d.networkFailed.map(Number));
+    ytRenderPool();
+   }catch(err){}
+ }
+});
+</script>
+
+<script>
+// ============================================================
+// GAME <-> PC CONTROL PANEL REMOTE BRIDGE
+// Uses the same known-working itty.ws relay transport.
+// ============================================================
+(function(){
+  let remoteConn=null, remoteCode='';
+  let retryTimer=null, starting=false;
+
+  function make6(){
+    try{const a=new Uint32Array(1);crypto.getRandomValues(a);return String(100000+(a[0]%900000));}
+    catch(e){return String(100000+Math.floor(Math.random()*900000));}
+  }
+  function showCode(){
+    const el=document.getElementById('gameRemoteCode');
+    if(el)el.textContent='CODE: '+remoteCode;
+    window.flagBattleRemoteCode=remoteCode;
+  }
+
+  function ittyConnect(channel, options={}){
+    let ws=null, queue=[], closed=false, listeners={};
+    const url=/^wss?:/.test(channel)?channel:('wss://itty.ws/c/'+encodeURIComponent(channel));
+    const qs=new URLSearchParams(options||{}).toString();
+    const endpoint=url+(qs?('?'+qs):'');
+    function emit(type,payload){
+      (listeners[type]||[]).slice().forEach(fn=>{try{fn(payload)}catch(e){}});
+      (listeners['*']||[]).slice().forEach(fn=>{try{fn(payload)}catch(e){}});
+    }
+    function open(){
+      if(closed)return api;
+      if(ws&&(ws.readyState===0||ws.readyState===1))return api;
+      try{
+        ws=new WebSocket(endpoint);
+        ws.onopen=()=>{queue.splice(0).forEach(x=>{try{ws.send(x)}catch(e){}});emit('open');};
+        ws.onmessage=e=>{
+          try{
+            const s=JSON.parse(e.data);
+            const message=s&&s.message;
+            const state={...(message&&!Array.isArray(message)?message:{}),...s};
+            emit(s&&s.type?s.type:'message',state);
+            if(!(s&&s.type))emit('message',state);
+          }catch(err){emit('error',err)}
+        };
+        ws.onerror=e=>emit('error',e);
+        ws.onclose=()=>{ws=null;emit('close');};
+      }catch(e){emit('error',e)}
+      return api;
+    }
+    function send(message){
+      const raw=JSON.stringify(message);
+      if(ws&&ws.readyState===1){try{ws.send(raw)}catch(e){queue.push(raw)}}
+      else queue.push(raw);
+      open();
+      return api;
+    }
+    const api={open,send,on(type,fn){(listeners[type]||(listeners[type]=[])).push(fn);open();return api},close(){closed=true;if(ws){try{ws.close()}catch(e){}}ws=null;return api}};
+    return api;
+  }
+
+  function startHost(){
+    if(starting||!remoteCode)return;
+    starting=true;
+    const alias='game-'+Math.random().toString(36).slice(2,10);
+    const socket=ittyConnect('flagbattle-'+remoteCode,{as:alias});
+    const handlers={};
+    const c={
+      open:false,
+      send(m){socket.send(m);return true},
+      close(){c.open=false;try{socket.close()}catch(e){}},
+      on(type,fn){(handlers[type]||(handlers[type]=[])).push(fn);return c}
+    };
+    function emit(type,payload){(handlers[type]||[]).slice().forEach(fn=>{try{fn(payload)}catch(e){}})}
+    socket.on('open',()=>{c.open=true;starting=false;emit('open')});
+    socket.on('message',e=>{
+      if(!e||e.alias===alias)return;
+      const m=e.message!==undefined?e.message:e;
+      emit('data',m);
+    });
+    socket.on('error',e=>{starting=false;emit('error',e)});
+    socket.on('close',()=>{c.open=false;starting=false;emit('close');scheduleReconnect()});
+    remoteConn=c;
+
+    c.on('open',()=>{
+      try{c.send({type:'FLAG_BATTLE_REMOTE_HELLO'});}catch(e){}
+      try{c.send({type:'FLAG_BATTLE_YT_STATE',state:ytCurrentState('remoteInitial')});}catch(e){}
+    });
+    c.on('data',d=>{
+      try{
+        if(d&&d.type==='FLAG_BATTLE_REQUEST_YT_STATE'){
+          c.send({type:'FLAG_BATTLE_YT_STATE',state:ytCurrentState('remoteState')});
+        }else if(d&&d.type==='FLAG_BATTLE_REMOTE_HELLO'){
+          c.send({type:'FLAG_BATTLE_REMOTE_ACK',code:remoteCode});
+        }else{
+          window.postMessage(d,'*');
+        }
+      }catch(e){}
+    });
+  }
+  function scheduleReconnect(){
+    if(retryTimer)return;
+    retryTimer=setTimeout(()=>{retryTimer=null;try{if(remoteConn)remoteConn.close()}catch(e){}remoteConn=null;startHost();},1500);
+  }
+
+  window.flagBattleRemote={
+    getCode:()=>remoteCode,
+    isConnected:()=>!!remoteConn&&!!remoteConn.open,
+    send:d=>{try{if(remoteConn&&remoteConn.open){remoteConn.send(d);return true}}catch(e){}return false}
+  };
+
+  remoteCode=make6();
+  showCode();
+  startHost();
+})();
+</script>
+</body>
+</html>
+<style>
+#winnerCard{background:transparent!important;border:none!important;box-shadow:none!important}
+#winnerTitle{font-size:52px!important;margin-bottom:20px}
+#winnerFlagBig{position:relative;width:220px;height:220px;margin:0 auto}
+#winnerFlagBig:before{
+content:'';position:absolute;inset:-60px;
+background:repeating-conic-gradient(rgba(255,215,0,.45) 0deg 12deg, transparent 12deg 24deg);
+border-radius:50%;
+animation:spinburst 8s linear infinite;
+}
+#winnerFlagBig>*{position:relative;z-index:2}
+#winnerCountry{font-size:42px!important;font-weight:900}
+@keyframes spinburst{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+</style>
